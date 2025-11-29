@@ -68,8 +68,24 @@ fun DashboardScreen(viewModel: MainViewModel) {
                     onJobClick = { job -> selectedJobForEdit = job }
                 )
             } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.no_active_shift))
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.no_active_shift),
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
                 }
             }
         }
@@ -140,31 +156,48 @@ fun ActiveShiftDashboard(
         // Stats Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(stringResource(R.string.current_shift), style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.current_shift).uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(stringResource(R.string.revenue), style = MaterialTheme.typography.labelMedium)
-                        Text("${uiState.currencySymbol}${"%.2f".format(uiState.currentRevenue)}", style = MaterialTheme.typography.headlineSmall)
+                        Text(stringResource(R.string.revenue), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = "${uiState.currencySymbol}${"%.2f".format(uiState.currentRevenue)}",
+                            style = MaterialTheme.typography.displaySmall, // BIGGER
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
-                    Column {
-                        Text(stringResource(R.string.mileage), style = MaterialTheme.typography.labelMedium)
-                        Text("${"%.1f".format(uiState.currentMileage)} km", style = MaterialTheme.typography.headlineSmall)
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(stringResource(R.string.mileage), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = "${"%.1f".format(uiState.currentMileage)} km",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = onEndShift,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Default.Stop, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.end_shift))
                 }
             }
