@@ -22,9 +22,10 @@ class TaxiRepository(private val taxiDao: TaxiDao) {
         taxiDao.insertShift(shift)
     }
 
-    suspend fun endShift(shift: Shift, endOdometer: Double) {
+    suspend fun endShift(shift: Shift, endOdometer: Double, vehicleCost: Double) {
         val updatedShift = shift.copy(
             endOdometer = endOdometer,
+            vehicleCost = vehicleCost,
             isActive = false
         )
         taxiDao.updateShift(updatedShift)

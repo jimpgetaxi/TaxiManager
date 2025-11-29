@@ -202,10 +202,17 @@ fun ActiveShiftDashboard(
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
-                    Column(horizontalAlignment = Alignment.End) {
+                    Column {
                         Text(stringResource(R.string.vat_label), style = MaterialTheme.typography.bodySmall)
                         Text(
                             text = "${uiState.currencySymbol}${"%.2f".format(uiState.totalVat)}",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(stringResource(R.string.vehicle_cost_label), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = "${uiState.currencySymbol}${"%.2f".format(uiState.vehicleCostForCurrentShift)}",
                             style = MaterialTheme.typography.titleMedium
                         )
                     }

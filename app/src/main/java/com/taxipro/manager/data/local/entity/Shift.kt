@@ -9,5 +9,6 @@ data class Shift(
     val startTime: Long,
     val startOdometer: Double,
     val endOdometer: Double? = null,
+    val vehicleCost: Double? = null,
     val isActive: Boolean = true
 )

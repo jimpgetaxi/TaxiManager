@@ -41,6 +41,7 @@
     <string name="initial_km_label">Ιστορικά Χιλιόμετρα</string>
     <string name="initial_expenses_label">Ιστορικά Έξοδα</string>
     <string name="cost_per_km_label">Κόστος ανά Χλμ</string>
+    <string name="vehicle_cost_label">Κόστος Οχήματος</string>
     <string name="calculated_cost_info">Υπολογίζεται βάσει ιστορικού + χρήσης εφαρμογής.</string>
 
     <!-- History & Details -->

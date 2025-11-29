@@ -20,6 +20,7 @@ data class DashboardUiState(
     val totalReceipts: Double = 0.0,
     val totalVat: Double = 0.0,
     val currentMileage: Double = 0.0,
+    val vehicleCostForCurrentShift: Double = 0.0,
     val currencySymbol: String = "€"
 )
 
@@ -49,10 +50,12 @@ class MainViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<DashboardUiState> = combine(
         _activeShift,
-        _currencySymbol
-    ) { shift, currency ->
-        Pair(shift, currency)
-    }.flatMapLatest { (shift, currency) ->
+        _currencySymbol,
+        costPerKm
+    ) { shift, currency, costPerKmValue ->
+        Pair(Pair(shift, currency), costPerKmValue)
+    }.flatMapLatest { (shiftAndCurrency, costPerKmValue) ->
+        val (shift, currency) = shiftAndCurrency
         if (shift == null) {
             flowOf(DashboardUiState(currencySymbol = currency))
         } else {
@@ -72,6 +75,8 @@ class MainViewModel(
                 // Formula: Tax = Gross * (Rate / (1 + Rate)) -> Gross * (0.13 / 1.13)
                 val totalVat = (totalReceipts / 1.13) * 0.13
                 
+                val vehicleCost = mileage * costPerKmValue
+
                 DashboardUiState(
                     activeShift = shift,
                     currentJobs = jobs,
@@ -79,6 +84,7 @@ class MainViewModel(
                     totalReceipts = totalReceipts,
                     totalVat = totalVat,
                     currentMileage = if (mileage > 0) mileage else 0.0,
+                    vehicleCostForCurrentShift = vehicleCost,
                     currencySymbol = currency
                 )
             }
@@ -93,8 +99,12 @@ class MainViewModel(
 
     fun endShift(endOdometer: Double) {
         val shift = uiState.value.activeShift ?: return
+        val currentCostPerKm = costPerKm.value
+        val distance = endOdometer - shift.startOdometer
+        val vehicleCost = if (distance > 0) distance * currentCostPerKm else 0.0
+        
         viewModelScope.launch {
-            repository.endShift(shift, endOdometer)
+            repository.endShift(shift, endOdometer, vehicleCost)
         }
     }
 
@@ -124,20 +134,7 @@ class MainViewModel(
 
     fun updateShift(shift: Shift) {
         viewModelScope.launch {
-            repository.endShift(shift, shift.endOdometer ?: 0.0) // Re-using endShift logic or just update
-            // Actually repository.endShift sets isActive=false. 
-            // We need a raw update method in Repository that calls dao.updateShift directly.
-            // But looking at repository.endShift:
-            /*
-            suspend fun endShift(shift: Shift, endOdometer: Double) {
-                val updatedShift = shift.copy(
-                    endOdometer = endOdometer,
-                    isActive = false
-                )
-                taxiDao.updateShift(updatedShift)
-            }
-            */
-            // I should add a generic updateShift to Repository first.
+            repository.updateShift(shift)
         }
     }
 

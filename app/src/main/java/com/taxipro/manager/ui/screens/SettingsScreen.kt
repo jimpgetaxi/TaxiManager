@@ -110,7 +110,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.labelMedium
                             )
                             Text(
-                                text = "${uiState.currencySymbol}${"%.3f".format(costPerKm)}",
+                                text = "${uiState.currencySymbol}${"%.2f".format(costPerKm)}",
                                 style = MaterialTheme.typography.displayMedium
                             )
                             Text(
