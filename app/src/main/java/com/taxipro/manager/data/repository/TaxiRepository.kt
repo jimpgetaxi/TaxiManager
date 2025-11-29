@@ -4,6 +4,7 @@ import com.taxipro.manager.data.local.dao.TaxiDao
 import com.taxipro.manager.data.local.entity.Job
 import com.taxipro.manager.data.local.entity.Shift
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 import com.taxipro.manager.data.local.entity.ShiftSummary
 
@@ -47,6 +48,8 @@ class TaxiRepository(private val taxiDao: TaxiDao) {
     suspend fun updateJob(job: Job) {
         taxiDao.updateJob(job)
     }
+
+    fun getTotalKilometers(): Flow<Double> = taxiDao.getTotalKilometers().map { it ?: 0.0 }
 
     fun getJobsForShift(shiftId: Long): Flow<List<Job>> = taxiDao.getJobsForShift(shiftId)
     

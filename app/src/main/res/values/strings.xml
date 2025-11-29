@@ -34,9 +34,14 @@
     <string name="update_action">Ενημέρωση</string>
 
     <!-- Settings -->
-    <string name="settings_title">Ρυθμίσεις</string>
-    <string name="currency_symbol_label">Σύμβολο Νομίσματος</string>
-    <string name="save_action">Αποθήκευση</string>
+    <string name="settings_title">Settings</string>
+    <string name="currency_symbol_label">Currency Symbol</string>
+    <string name="save_action">Save</string>
+    <string name="vehicle_settings_title">Vehicle Settings</string>
+    <string name="initial_km_label">Historical Total Km</string>
+    <string name="initial_expenses_label">Historical Total Expenses</string>
+    <string name="cost_per_km_label">Cost per Km</string>
+    <string name="calculated_cost_info">Calculated based on historical data + app usage.</string>
 
     <!-- History & Details -->
     <string name="history_title">Ιστορικό Βάρδιας</string>

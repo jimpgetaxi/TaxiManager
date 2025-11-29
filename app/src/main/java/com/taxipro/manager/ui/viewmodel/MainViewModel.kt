@@ -31,6 +31,18 @@ class MainViewModel(
     private val _activeShift = repository.activeShift
     private val _currencySymbol = userPreferencesRepository.currencySymbol
 
+    val initialHistoricalKm = userPreferencesRepository.initialHistoricalKm
+    val initialHistoricalExpenses = userPreferencesRepository.initialHistoricalExpenses
+
+    val costPerKm: StateFlow<Double> = combine(
+        initialHistoricalKm,
+        initialHistoricalExpenses,
+        repository.getTotalKilometers()
+    ) { initKm, initExp, appKm ->
+        val totalKm = initKm + appKm
+        if (totalKm > 0) initExp / totalKm else 0.0
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
     val shiftHistory: StateFlow<List<ShiftSummary>> = repository.shiftHistory
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -141,6 +153,13 @@ class MainViewModel(
     fun updateCurrency(symbol: String) {
         viewModelScope.launch {
             userPreferencesRepository.setCurrencySymbol(symbol)
+        }
+    }
+
+    fun updateVehicleSettings(km: Double, expenses: Double) {
+        viewModelScope.launch {
+            userPreferencesRepository.setInitialHistoricalKm(km)
+            userPreferencesRepository.setInitialHistoricalExpenses(expenses)
         }
     }
 }

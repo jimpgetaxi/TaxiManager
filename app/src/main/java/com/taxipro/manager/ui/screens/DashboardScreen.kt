@@ -25,12 +25,15 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(viewModel: MainViewModel, onHistoryClick: () -> Unit) {
+fun DashboardScreen(
+    viewModel: MainViewModel,
+    onHistoryClick: () -> Unit,
+    onSettingsClick: () -> Unit
+) {
     val uiState by viewModel.uiState.collectAsState()
     var showStartShiftDialog by remember { mutableStateOf(false) }
     var showEndShiftDialog by remember { mutableStateOf(false) }
     var showAddJobDialog by remember { mutableStateOf(false) }
-    var showSettingsDialog by remember { mutableStateOf(false) }
     var selectedJobForEdit by remember { mutableStateOf<Job?>(null) }
 
     Scaffold(
@@ -41,7 +44,7 @@ fun DashboardScreen(viewModel: MainViewModel, onHistoryClick: () -> Unit) {
                     IconButton(onClick = onHistoryClick) {
                         Icon(Icons.Default.DateRange, contentDescription = stringResource(R.string.history_desc))
                     }
-                    IconButton(onClick = { showSettingsDialog = true }) {
+                    IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings_title))
                     }
                 }
@@ -134,17 +137,6 @@ fun DashboardScreen(viewModel: MainViewModel, onHistoryClick: () -> Unit) {
             onConfirm = { revenue, receiptAmount, notes, odometer ->
                 viewModel.updateJob(selectedJobForEdit!!, revenue, receiptAmount, notes, odometer)
                 selectedJobForEdit = null
-            }
-        )
-    }
-
-    if (showSettingsDialog) {
-        SettingsDialog(
-            currentSymbol = uiState.currencySymbol,
-            onDismiss = { showSettingsDialog = false },
-            onSave = { newSymbol ->
-                viewModel.updateCurrency(newSymbol)
-                showSettingsDialog = false
             }
         )
     }
@@ -449,30 +441,4 @@ fun AddJobDialog(currencySymbol: String, onDismiss: () -> Unit, onConfirm: (Doub
     )
 }
 
-@Composable
-fun SettingsDialog(currentSymbol: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
-    var symbol by remember { mutableStateOf(currentSymbol) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.settings_title)) },
-        text = {
-            OutlinedTextField(
-                value = symbol,
-                onValueChange = { symbol = it },
-                label = { Text(stringResource(R.string.currency_symbol_label)) }
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = { onSave(symbol) }) {
-                Text(stringResource(R.string.save_action))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel_action))
-            }
-        }
-    )
-}
 

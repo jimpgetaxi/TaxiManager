@@ -39,6 +39,9 @@ interface TaxiDao {
     @Query("SELECT * FROM shifts WHERE id = :shiftId")
     fun getShiftById(shiftId: Long): Flow<Shift?>
 
+    @Query("SELECT SUM(endOdometer - startOdometer) FROM shifts WHERE endOdometer IS NOT NULL")
+    fun getTotalKilometers(): Flow<Double?>
+
     // Job Operations
     @Insert
     suspend fun insertJob(job: Job)

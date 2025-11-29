@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.taxipro.manager.ui.screens.HistoryScreen
+import com.taxipro.manager.ui.screens.SettingsScreen
 import com.taxipro.manager.ui.screens.ShiftDetailsScreen
 
 class MainActivity : ComponentActivity() {
@@ -49,7 +50,8 @@ class MainActivity : ComponentActivity() {
                     when (currentScreen) {
                         "dashboard" -> DashboardScreen(
                             viewModel = viewModel,
-                            onHistoryClick = { currentScreen = "history" }
+                            onHistoryClick = { currentScreen = "history" },
+                            onSettingsClick = { currentScreen = "settings" }
                         )
                         "history" -> HistoryScreen(
                             viewModel = viewModel,
@@ -70,6 +72,10 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "history"
                             }
                         }
+                        "settings" -> SettingsScreen(
+                            viewModel = viewModel,
+                            onBackClick = { currentScreen = "dashboard" }
+                        )
                     }
                 }
             }
