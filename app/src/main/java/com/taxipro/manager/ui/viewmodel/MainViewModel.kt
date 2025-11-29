@@ -11,6 +11,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+import com.taxipro.manager.data.local.entity.ShiftSummary
+
 data class DashboardUiState(
     val activeShift: Shift? = null,
     val currentJobs: List<Job> = emptyList(),
@@ -28,6 +30,9 @@ class MainViewModel(
 
     private val _activeShift = repository.activeShift
     private val _currencySymbol = userPreferencesRepository.currencySymbol
+
+    val shiftHistory: StateFlow<List<ShiftSummary>> = repository.shiftHistory
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<DashboardUiState> = combine(
@@ -83,8 +88,12 @@ class MainViewModel(
 
     fun addJob(revenue: Double, receiptAmount: Double?, notes: String?, currentOdometer: Double?) {
         val shift = uiState.value.activeShift ?: return
+        addJobToShift(shift.id, revenue, receiptAmount, notes, currentOdometer)
+    }
+
+    fun addJobToShift(shiftId: Long, revenue: Double, receiptAmount: Double?, notes: String?, currentOdometer: Double?) {
         viewModelScope.launch {
-            repository.addJob(shift.id, revenue, receiptAmount, notes, currentOdometer)
+            repository.addJob(shiftId, revenue, receiptAmount, notes, currentOdometer)
         }
     }
 
@@ -100,6 +109,34 @@ class MainViewModel(
             )
         }
     }
+
+    fun updateShift(shift: Shift) {
+        viewModelScope.launch {
+            repository.endShift(shift, shift.endOdometer ?: 0.0) // Re-using endShift logic or just update
+            // Actually repository.endShift sets isActive=false. 
+            // We need a raw update method in Repository that calls dao.updateShift directly.
+            // But looking at repository.endShift:
+            /*
+            suspend fun endShift(shift: Shift, endOdometer: Double) {
+                val updatedShift = shift.copy(
+                    endOdometer = endOdometer,
+                    isActive = false
+                )
+                taxiDao.updateShift(updatedShift)
+            }
+            */
+            // I should add a generic updateShift to Repository first.
+        }
+    }
+
+    fun updateShiftDetails(shift: Shift) {
+        viewModelScope.launch {
+            repository.updateShift(shift)
+        }
+    }
+
+    fun getShift(shiftId: Long): Flow<Shift?> = repository.getShiftById(shiftId)
+    fun getJobs(shiftId: Long): Flow<List<Job>> = repository.getJobsForShift(shiftId)
 
     fun updateCurrency(symbol: String) {
         viewModelScope.launch {

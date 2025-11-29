@@ -2,39 +2,50 @@
     <string name="app_name">Taxi Manager</string>
     
     <!-- Dashboard -->
-    <string name="no_active_shift">No active shift. Start one to track your revenue!</string>
-    <string name="start_shift_desc">Start Shift</string>
-    <string name="add_job_desc">Add Job</string>
-    <string name="current_shift">Current Shift</string>
-    <string name="revenue">Revenue</string>
-    <string name="mileage">Mileage</string>
-    <string name="end_shift">End Shift</string>
-    <string name="jobs">Jobs</string>
-    <string name="time_label">Time: %1$s</string>
+    <string name="no_active_shift">Δεν υπάρχει ενεργή βάρδια. Ξεκίνα μία για να καταγράψεις τον τζίρο σου!</string>
+    <string name="start_shift_desc">Έναρξη Βάρδιας</string>
+    <string name="add_job_desc">Προσθήκη Κούρσας</string>
+    <string name="current_shift">Τρέχουσα Βάρδια</string>
+    <string name="revenue">Τζίρος</string>
+    <string name="mileage">Χιλιόμετρα</string>
+    <string name="end_shift">Λήξη Βάρδιας</string>
+    <string name="jobs">Κούρσες</string>
+    <string name="time_label">Ώρα: %1$s</string>
     
     <!-- Dialogs -->
-    <string name="start_shift_title">Start Shift</string>
-    <string name="starting_odometer">Starting Odometer</string>
-    <string name="start_action">Start</string>
-    <string name="cancel_action">Cancel</string>
+    <string name="start_shift_title">Έναρξη Βάρδιας</string>
+    <string name="starting_odometer">Αρχικό Οδόμετρο</string>
+    <string name="start_action">Έναρξη</string>
+    <string name="cancel_action">Ακύρωση</string>
     
-    <string name="end_shift_title">End Shift</string>
-    <string name="ending_odometer">Ending Odometer</string>
-    <string name="end_action">End</string>
+    <string name="end_shift_title">Λήξη Βάρδιας</string>
+    <string name="ending_odometer">Τελικό Οδόμετρο</string>
+    <string name="end_action">Λήξη</string>
     
-    <string name="add_job_title">Add Job</string>
-    <string name="edit_job_title">Edit Job</string>
-    <string name="revenue_label">Revenue (%1$s)</string>
-    <string name="receipt_amount_label">Ποσό Απόδειξης (Optional)</string>
-    <string name="receipts_z_label">Receipts (Z)</string>
+    <string name="add_job_title">Προσθήκη Κούρσας</string>
+    <string name="edit_job_title">Επεξεργασία Κούρσας</string>
+    <string name="revenue_label">Ποσό (%1$s)</string>
+    <string name="receipt_amount_label">Ποσό Απόδειξης (Προαιρετικό)</string>
+    <string name="receipts_z_label">Αποδείξεις (Z)</string>
     <string name="vat_label">ΦΠΑ (13%)</string>
-    <string name="notes_label">Notes (Optional)</string>
-    <string name="current_odometer_label">Current Odometer (Optional)</string>
-    <string name="add_action">Add</string>
-    <string name="update_action">Update</string>
+    <string name="notes_label">Σημειώσεις (Προαιρετικό)</string>
+    <string name="current_odometer_label">Τρέχον Οδόμετρο (Προαιρετικό)</string>
+    <string name="add_action">Προσθήκη</string>
+    <string name="update_action">Ενημέρωση</string>
 
     <!-- Settings -->
-    <string name="settings_title">Settings</string>
-    <string name="currency_symbol_label">Currency Symbol</string>
-    <string name="save_action">Save</string>
+    <string name="settings_title">Ρυθμίσεις</string>
+    <string name="currency_symbol_label">Σύμβολο Νομίσματος</string>
+    <string name="save_action">Αποθήκευση</string>
+
+    <!-- History & Details -->
+    <string name="history_title">Ιστορικό Βάρδιας</string>
+    <string name="no_history">Δεν υπάρχει ιστορικό ακόμα.</string>
+    <string name="shift_details_title">Λεπτομέρειες Βάρδιας</string>
+    <string name="edit_shift_details_title">Επεξεργασία Βάρδιας</string>
+    <string name="date_label">Ημερομηνία: %1$s</string>
+    <string name="distance_label">Απόσταση</string>
+    <string name="back_desc">Πίσω</string>
+    <string name="edit_desc">Επεξεργασία</string>
+    <string name="history_desc">Ιστορικό</string>
 </resources>

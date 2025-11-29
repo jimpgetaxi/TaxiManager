@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
@@ -24,7 +25,7 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(viewModel: MainViewModel) {
+fun DashboardScreen(viewModel: MainViewModel, onHistoryClick: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
     var showStartShiftDialog by remember { mutableStateOf(false) }
     var showEndShiftDialog by remember { mutableStateOf(false) }
@@ -37,6 +38,9 @@ fun DashboardScreen(viewModel: MainViewModel) {
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
+                    IconButton(onClick = onHistoryClick) {
+                        Icon(Icons.Default.DateRange, contentDescription = stringResource(R.string.history_desc))
+                    }
                     IconButton(onClick = { showSettingsDialog = true }) {
                         Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings_title))
                     }

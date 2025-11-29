@@ -5,8 +5,13 @@ import com.taxipro.manager.data.local.entity.Job
 import com.taxipro.manager.data.local.entity.Shift
 import kotlinx.coroutines.flow.Flow
 
+import com.taxipro.manager.data.local.entity.ShiftSummary
+
 class TaxiRepository(private val taxiDao: TaxiDao) {
     val activeShift: Flow<Shift?> = taxiDao.getActiveShift()
+    val shiftHistory: Flow<List<ShiftSummary>> = taxiDao.getShiftSummaries()
+
+    fun getShiftById(shiftId: Long): Flow<Shift?> = taxiDao.getShiftById(shiftId)
 
     suspend fun startShift(startOdometer: Double) {
         val shift = Shift(
@@ -22,6 +27,10 @@ class TaxiRepository(private val taxiDao: TaxiDao) {
             isActive = false
         )
         taxiDao.updateShift(updatedShift)
+    }
+
+    suspend fun updateShift(shift: Shift) {
+        taxiDao.updateShift(shift)
     }
 
     suspend fun addJob(shiftId: Long, revenue: Double, receiptAmount: Double?, notes: String?, currentOdometer: Double?) {

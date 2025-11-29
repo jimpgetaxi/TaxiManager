@@ -19,6 +19,13 @@ import com.taxipro.manager.ui.viewmodel.MainViewModelFactory
 import com.taxipro.manager.data.repository.UserPreferencesRepository
 import com.taxipro.manager.data.repository.dataStore
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.taxipro.manager.ui.screens.HistoryScreen
+import com.taxipro.manager.ui.screens.ShiftDetailsScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +43,34 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    DashboardScreen(viewModel = viewModel)
+                    var currentScreen by remember { mutableStateOf("dashboard") }
+                    var selectedShiftId by remember { mutableStateOf<Long?>(null) }
+
+                    when (currentScreen) {
+                        "dashboard" -> DashboardScreen(
+                            viewModel = viewModel,
+                            onHistoryClick = { currentScreen = "history" }
+                        )
+                        "history" -> HistoryScreen(
+                            viewModel = viewModel,
+                            onBackClick = { currentScreen = "dashboard" },
+                            onShiftClick = { shiftId ->
+                                selectedShiftId = shiftId
+                                currentScreen = "shift_details"
+                            }
+                        )
+                        "shift_details" -> {
+                            if (selectedShiftId != null) {
+                                ShiftDetailsScreen(
+                                    shiftId = selectedShiftId!!,
+                                    viewModel = viewModel,
+                                    onBackClick = { currentScreen = "history" }
+                                )
+                            } else {
+                                currentScreen = "history"
+                            }
+                        }
+                    }
                 }
             }
         }
