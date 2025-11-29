@@ -44,6 +44,21 @@
     <string name="vehicle_cost_label">Κόστος Οχήματος</string>
     <string name="calculated_cost_info">Υπολογίζεται βάσει ιστορικού + χρήσης εφαρμογής.</string>
 
+    <!-- Expenses -->
+    <string name="expenses_title">Έξοδα</string>
+    <string name="no_expenses">Δεν υπάρχουν έξοδα ακόμα.</string>
+    <string name="add_expense_title">Προσθήκη Εξόδου</string>
+    <string name="description_label">Περιγραφή (π.χ. Καύσιμα)</string>
+    <string name="amount_label">Ποσό (%1$s)</string>
+    <string name="affects_cost_label">Επηρεάζει Κόστος/Χλμ</string>
+    <string name="is_invoice_label">Τιμολόγιο (Έκπτωση ΦΠΑ)</string>
+    <string name="vat_rate_label">Συντελεστής ΦΠΑ</string>
+    <string name="vat_amount_label">Ποσό ΦΠΑ</string>
+    <string name="manual_vat">Χειροκίνητο</string>
+    <string name="delete_expense_confirm">Διαγραφή εξόδου;</string>
+    <string name="payable_vat_label">Πληρωτέο ΦΠΑ</string>
+    <string name="deductible_vat_label">ΦΠΑ Εξόδων</string>
+
     <!-- History & Details -->
     <string name="history_title">Ιστορικό Βάρδιας</string>
     <string name="no_history">Δεν υπάρχει ιστορικό ακόμα.</string>

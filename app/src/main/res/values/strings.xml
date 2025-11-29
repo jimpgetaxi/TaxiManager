@@ -44,6 +44,21 @@
     <string name="vehicle_cost_label">Vehicle Cost</string>
     <string name="calculated_cost_info">Calculated based on historical data + app usage.</string>
 
+    <!-- Expenses -->
+    <string name="expenses_title">Expenses</string>
+    <string name="no_expenses">No expenses recorded yet.</string>
+    <string name="add_expense_title">Add Expense</string>
+    <string name="description_label">Description (e.g. Fuel)</string>
+    <string name="amount_label">Amount (%1$s)</string>
+    <string name="affects_cost_label">Affects Cost/Km</string>
+    <string name="is_invoice_label">Invoice (VAT Deductible)</string>
+    <string name="vat_rate_label">VAT Rate</string>
+    <string name="vat_amount_label">VAT Amount</string>
+    <string name="manual_vat">Manual</string>
+    <string name="delete_expense_confirm">Delete this expense?</string>
+    <string name="payable_vat_label">Payable VAT</string>
+    <string name="deductible_vat_label">Deductible VAT</string>
+
     <!-- History & Details -->
     <string name="history_title">Ιστορικό Βάρδιας</string>
     <string name="no_history">Δεν υπάρχει ιστορικό ακόμα.</string>

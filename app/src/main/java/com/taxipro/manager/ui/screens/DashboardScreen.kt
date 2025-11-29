@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.taxipro.manager.R
@@ -23,12 +24,15 @@ import com.taxipro.manager.ui.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+import androidx.compose.material.icons.filled.ShoppingCart
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     viewModel: MainViewModel,
     onHistoryClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onExpensesClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showStartShiftDialog by remember { mutableStateOf(false) }
@@ -41,6 +45,9 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
+                    IconButton(onClick = onExpensesClick) {
+                        Icon(Icons.Default.ShoppingCart, contentDescription = stringResource(R.string.expenses_title))
+                    }
                     IconButton(onClick = onHistoryClick) {
                         Icon(Icons.Default.DateRange, contentDescription = stringResource(R.string.history_desc))
                     }
@@ -190,7 +197,7 @@ fun ActiveShiftDashboard(
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Secondary Stats: Receipts (Z) & VAT
+                // Secondary Stats: Receipts (Z) & Revenue VAT
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -202,13 +209,47 @@ fun ActiveShiftDashboard(
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
-                    Column {
+                    Column(horizontalAlignment = Alignment.End) {
                         Text(stringResource(R.string.vat_label), style = MaterialTheme.typography.bodySmall)
                         Text(
                             text = "${uiState.currencySymbol}${"%.2f".format(uiState.totalVat)}",
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Tertiary Stats: Deductible VAT & Payable VAT
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(stringResource(R.string.deductible_vat_label), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = "${uiState.currencySymbol}${"%.2f".format(uiState.totalDeductibleVat)}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(stringResource(R.string.payable_vat_label), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = "${uiState.currencySymbol}${"%.2f".format(uiState.payableVat)}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Vehicle Cost
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
                     Column(horizontalAlignment = Alignment.End) {
                         Text(stringResource(R.string.vehicle_cost_label), style = MaterialTheme.typography.bodySmall)
                         Text(

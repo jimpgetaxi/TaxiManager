@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.taxipro.manager.ui.screens.HistoryScreen
 import com.taxipro.manager.ui.screens.SettingsScreen
+import com.taxipro.manager.ui.screens.ExpensesScreen
 import com.taxipro.manager.ui.screens.ShiftDetailsScreen
 
 class MainActivity : ComponentActivity() {
@@ -33,7 +34,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         val database = TaxiDatabase.getDatabase(this)
-        val repository = TaxiRepository(database.taxiDao())
+        val repository = TaxiRepository(database.taxiDao(), database.expenseDao())
         val userPreferencesRepository = UserPreferencesRepository(this)
         val viewModelFactory = MainViewModelFactory(repository, userPreferencesRepository)
         val viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
@@ -51,7 +52,8 @@ class MainActivity : ComponentActivity() {
                         "dashboard" -> DashboardScreen(
                             viewModel = viewModel,
                             onHistoryClick = { currentScreen = "history" },
-                            onSettingsClick = { currentScreen = "settings" }
+                            onSettingsClick = { currentScreen = "settings" },
+                            onExpensesClick = { currentScreen = "expenses" }
                         )
                         "history" -> HistoryScreen(
                             viewModel = viewModel,
@@ -73,6 +75,10 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         "settings" -> SettingsScreen(
+                            viewModel = viewModel,
+                            onBackClick = { currentScreen = "dashboard" }
+                        )
+                        "expenses" -> ExpensesScreen(
                             viewModel = viewModel,
                             onBackClick = { currentScreen = "dashboard" }
                         )
