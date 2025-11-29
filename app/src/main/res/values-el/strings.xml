@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Taxi Manager</string>
+    
+    <!-- Dashboard -->
+    <string name="no_active_shift">Δεν υπάρχει ενεργή βάρδια. Ξεκινήστε μία για καταγραφή εσόδων!</string>
+    <string name="start_shift_desc">Έναρξη Βάρδιας</string>
+    <string name="add_job_desc">Προσθήκη Κούρσας</string>
+    <string name="current_shift">Τρέχουσα Βάρδια</string>
+    <string name="revenue">Τζίρος</string>
+    <string name="mileage">Χιλιόμετρα</string>
+    <string name="end_shift">Λήξη Βάρδιας</string>
+    <string name="jobs">Κούρσες</string>
+    <string name="time_label">Ώρα: %1$s</string>
+    
+    <!-- Dialogs -->
+    <string name="start_shift_title">Έναρξη Βάρδιας</string>
+    <string name="starting_odometer">Αρχικό Οδόμετρο</string>
+    <string name="start_action">Έναρξη</string>
+    <string name="cancel_action">Ακύρωση</string>
+    
+    <string name="end_shift_title">Λήξη Βάρδιας</string>
+    <string name="ending_odometer">Τελικό Οδόμετρο</string>
+    <string name="end_action">Τέλος</string>
+    
+    <string name="add_job_title">Προσθήκη Κούρσας</string>
+    <string name="edit_job_title">Επεξεργασία Κούρσας</string>
+    <string name="revenue_label">Ποσό (%1$s)</string>
+    <string name="notes_label">Σημειώσεις (Προαιρετικό)</string>
+    <string name="current_odometer_label">Τρέχον Οδόμετρο (Προαιρετικό)</string>
+    <string name="add_action">Προσθήκη</string>
+    <string name="update_action">Ενημέρωση</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Ρυθμίσεις</string>
+    <string name="currency_symbol_label">Σύμβολο Νομίσματος</string>
+    <string name="save_action">Αποθήκευση</string>
+</resources>

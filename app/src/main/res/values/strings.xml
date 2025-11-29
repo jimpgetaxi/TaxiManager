@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Taxi Manager</string>
+    
+    <!-- Dashboard -->
+    <string name="no_active_shift">No active shift. Start one to track your revenue!</string>
+    <string name="start_shift_desc">Start Shift</string>
+    <string name="add_job_desc">Add Job</string>
+    <string name="current_shift">Current Shift</string>
+    <string name="revenue">Revenue</string>
+    <string name="mileage">Mileage</string>
+    <string name="end_shift">End Shift</string>
+    <string name="jobs">Jobs</string>
+    <string name="time_label">Time: %1$s</string>
+    
+    <!-- Dialogs -->
+    <string name="start_shift_title">Start Shift</string>
+    <string name="starting_odometer">Starting Odometer</string>
+    <string name="start_action">Start</string>
+    <string name="cancel_action">Cancel</string>
+    
+    <string name="end_shift_title">End Shift</string>
+    <string name="ending_odometer">Ending Odometer</string>
+    <string name="end_action">End</string>
+    
+    <string name="add_job_title">Add Job</string>
+    <string name="edit_job_title">Edit Job</string>
+    <string name="revenue_label">Revenue (%1$s)</string>
+    <string name="notes_label">Notes (Optional)</string>
+    <string name="current_odometer_label">Current Odometer (Optional)</string>
+    <string name="add_action">Add</string>
+    <string name="update_action">Update</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="currency_symbol_label">Currency Symbol</string>
+    <string name="save_action">Save</string>
+</resources>
