@@ -34,9 +34,9 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun TaxiManagerTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true, // Force Dark Theme by default for Taxi App
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
