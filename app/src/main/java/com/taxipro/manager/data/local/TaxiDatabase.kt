@@ -8,7 +8,7 @@ import com.taxipro.manager.data.local.dao.TaxiDao
 import com.taxipro.manager.data.local.entity.Job
 import com.taxipro.manager.data.local.entity.Shift
 
-@Database(entities = [Shift::class, Job::class], version = 1, exportSchema = false)
+@Database(entities = [Shift::class, Job::class], version = 2, exportSchema = false)
 abstract class TaxiDatabase : RoomDatabase() {
     abstract fun taxiDao(): TaxiDao
 
@@ -22,7 +22,9 @@ abstract class TaxiDatabase : RoomDatabase() {
                     context.applicationContext,
                     TaxiDatabase::class.java,
                     "taxi_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

@@ -24,10 +24,11 @@ class TaxiRepository(private val taxiDao: TaxiDao) {
         taxiDao.updateShift(updatedShift)
     }
 
-    suspend fun addJob(shiftId: Long, revenue: Double, notes: String?, currentOdometer: Double?) {
+    suspend fun addJob(shiftId: Long, revenue: Double, receiptAmount: Double?, notes: String?, currentOdometer: Double?) {
         val job = Job(
             shiftId = shiftId,
             revenue = revenue,
+            receiptAmount = receiptAmount,
             notes = notes,
             currentOdometer = currentOdometer
         )

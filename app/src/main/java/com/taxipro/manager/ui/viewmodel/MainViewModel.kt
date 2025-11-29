@@ -15,6 +15,8 @@ data class DashboardUiState(
     val activeShift: Shift? = null,
     val currentJobs: List<Job> = emptyList(),
     val currentRevenue: Double = 0.0,
+    val totalReceipts: Double = 0.0,
+    val totalVat: Double = 0.0,
     val currentMileage: Double = 0.0,
     val currencySymbol: String = "€"
 )
@@ -47,11 +49,18 @@ class MainViewModel(
                 } else {
                     0.0
                 }
+
+                val totalReceipts = jobs.sumOf { it.receiptAmount ?: 0.0 }
+                // Calculate VAT (13%) included in the gross receipt amount
+                // Formula: Tax = Gross * (Rate / (1 + Rate)) -> Gross * (0.13 / 1.13)
+                val totalVat = (totalReceipts / 1.13) * 0.13
                 
                 DashboardUiState(
                     activeShift = shift,
                     currentJobs = jobs,
                     currentRevenue = revenue ?: 0.0,
+                    totalReceipts = totalReceipts,
+                    totalVat = totalVat,
                     currentMileage = if (mileage > 0) mileage else 0.0,
                     currencySymbol = currency
                 )
@@ -72,18 +81,19 @@ class MainViewModel(
         }
     }
 
-    fun addJob(revenue: Double, notes: String?, currentOdometer: Double?) {
+    fun addJob(revenue: Double, receiptAmount: Double?, notes: String?, currentOdometer: Double?) {
         val shift = uiState.value.activeShift ?: return
         viewModelScope.launch {
-            repository.addJob(shift.id, revenue, notes, currentOdometer)
+            repository.addJob(shift.id, revenue, receiptAmount, notes, currentOdometer)
         }
     }
 
-    fun updateJob(job: Job, revenue: Double, notes: String?, currentOdometer: Double?) {
+    fun updateJob(job: Job, revenue: Double, receiptAmount: Double?, notes: String?, currentOdometer: Double?) {
         viewModelScope.launch {
             repository.updateJob(
                 job.copy(
                     revenue = revenue,
+                    receiptAmount = receiptAmount,
                     notes = notes,
                     currentOdometer = currentOdometer
                 )

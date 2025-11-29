@@ -115,8 +115,8 @@ fun DashboardScreen(viewModel: MainViewModel) {
         AddJobDialog(
             currencySymbol = uiState.currencySymbol,
             onDismiss = { showAddJobDialog = false },
-            onConfirm = { revenue, notes, odometer ->
-                viewModel.addJob(revenue, notes, odometer)
+            onConfirm = { revenue, receiptAmount, notes, odometer ->
+                viewModel.addJob(revenue, receiptAmount, notes, odometer)
                 showAddJobDialog = false
             }
         )
@@ -127,8 +127,8 @@ fun DashboardScreen(viewModel: MainViewModel) {
             job = selectedJobForEdit!!,
             currencySymbol = uiState.currencySymbol,
             onDismiss = { selectedJobForEdit = null },
-            onConfirm = { revenue, notes, odometer ->
-                viewModel.updateJob(selectedJobForEdit!!, revenue, notes, odometer)
+            onConfirm = { revenue, receiptAmount, notes, odometer ->
+                viewModel.updateJob(selectedJobForEdit!!, revenue, receiptAmount, notes, odometer)
                 selectedJobForEdit = null
             }
         )
@@ -166,6 +166,8 @@ fun ActiveShiftDashboard(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+                
+                // Main Stats: Revenue & Mileage
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -175,7 +177,7 @@ fun ActiveShiftDashboard(
                         Text(stringResource(R.string.revenue), style = MaterialTheme.typography.bodyMedium)
                         Text(
                             text = "${uiState.currencySymbol}${"%.2f".format(uiState.currentRevenue)}",
-                            style = MaterialTheme.typography.displaySmall, // BIGGER
+                            style = MaterialTheme.typography.displaySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -187,7 +189,34 @@ fun ActiveShiftDashboard(
                         )
                     }
                 }
+                
                 Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Secondary Stats: Receipts (Z) & VAT
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(stringResource(R.string.receipts_z_label), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = "${uiState.currencySymbol}${"%.2f".format(uiState.totalReceipts)}",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(stringResource(R.string.vat_label), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = "${uiState.currencySymbol}${"%.2f".format(uiState.totalVat)}",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                
                 Button(
                     onClick = onEndShift,
                     colors = ButtonDefaults.buttonColors(
@@ -249,9 +278,10 @@ fun EditJobDialog(
     job: Job,
     currencySymbol: String,
     onDismiss: () -> Unit,
-    onConfirm: (Double, String?, Double?) -> Unit
+    onConfirm: (Double, Double?, String?, Double?) -> Unit
 ) {
     var revenue by remember { mutableStateOf(job.revenue.toString()) }
+    var receiptAmount by remember { mutableStateOf(job.receiptAmount?.toString() ?: "") }
     var notes by remember { mutableStateOf(job.notes ?: "") }
     var odometer by remember { mutableStateOf(job.currentOdometer?.toString() ?: "") }
 
@@ -264,6 +294,12 @@ fun EditJobDialog(
                     value = revenue,
                     onValueChange = { revenue = it },
                     label = { Text(stringResource(R.string.revenue_label, currencySymbol)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+                OutlinedTextField(
+                    value = receiptAmount,
+                    onValueChange = { receiptAmount = it },
+                    label = { Text(stringResource(R.string.receipt_amount_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
                 OutlinedTextField(
@@ -282,7 +318,7 @@ fun EditJobDialog(
         confirmButton = {
             TextButton(onClick = {
                 revenue.toDoubleOrNull()?.let { rev ->
-                    onConfirm(rev, notes.takeIf { it.isNotBlank() }, odometer.toDoubleOrNull())
+                    onConfirm(rev, receiptAmount.toDoubleOrNull(), notes.takeIf { it.isNotBlank() }, odometer.toDoubleOrNull())
                 }
             }) {
                 Text(stringResource(R.string.update_action))
@@ -356,8 +392,9 @@ fun EndShiftDialog(onDismiss: () -> Unit, onConfirm: (Double) -> Unit) {
 }
 
 @Composable
-fun AddJobDialog(currencySymbol: String, onDismiss: () -> Unit, onConfirm: (Double, String?, Double?) -> Unit) {
+fun AddJobDialog(currencySymbol: String, onDismiss: () -> Unit, onConfirm: (Double, Double?, String?, Double?) -> Unit) {
     var revenue by remember { mutableStateOf("") }
+    var receiptAmount by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     var odometer by remember { mutableStateOf("") }
 
@@ -370,6 +407,12 @@ fun AddJobDialog(currencySymbol: String, onDismiss: () -> Unit, onConfirm: (Doub
                     value = revenue,
                     onValueChange = { revenue = it },
                     label = { Text(stringResource(R.string.revenue_label, currencySymbol)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+                OutlinedTextField(
+                    value = receiptAmount,
+                    onValueChange = { receiptAmount = it },
+                    label = { Text(stringResource(R.string.receipt_amount_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
                 OutlinedTextField(
@@ -388,7 +431,7 @@ fun AddJobDialog(currencySymbol: String, onDismiss: () -> Unit, onConfirm: (Doub
         confirmButton = {
             TextButton(onClick = {
                 revenue.toDoubleOrNull()?.let { rev ->
-                    onConfirm(rev, notes.takeIf { it.isNotBlank() }, odometer.toDoubleOrNull())
+                    onConfirm(rev, receiptAmount.toDoubleOrNull(), notes.takeIf { it.isNotBlank() }, odometer.toDoubleOrNull())
                 }
             }) {
                 Text(stringResource(R.string.add_action))

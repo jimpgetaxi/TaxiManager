@@ -21,6 +21,7 @@ data class Job(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val shiftId: Long,
     val revenue: Double,
+    val receiptAmount: Double? = null,
     val notes: String? = null,
     val currentOdometer: Double? = null,
     val timestamp: Long = System.currentTimeMillis()

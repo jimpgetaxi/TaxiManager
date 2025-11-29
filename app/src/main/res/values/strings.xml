@@ -25,6 +25,9 @@
     <string name="add_job_title">Add Job</string>
     <string name="edit_job_title">Edit Job</string>
     <string name="revenue_label">Revenue (%1$s)</string>
+    <string name="receipt_amount_label">Ποσό Απόδειξης (Optional)</string>
+    <string name="receipts_z_label">Receipts (Z)</string>
+    <string name="vat_label">ΦΠΑ (13%)</string>
     <string name="notes_label">Notes (Optional)</string>
     <string name="current_odometer_label">Current Odometer (Optional)</string>
     <string name="add_action">Add</string>
