@@ -9,25 +9,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
-import com.taxipro.manager.data.local.TaxiDatabase
-import com.taxipro.manager.data.repository.TaxiRepository
-import com.taxipro.manager.ui.screens.DashboardScreen
-import com.taxipro.manager.ui.theme.TaxiManagerTheme
-import com.taxipro.manager.ui.viewmodel.MainViewModel
-import com.taxipro.manager.ui.viewmodel.MainViewModelFactory
-
-import com.taxipro.manager.data.repository.UserPreferencesRepository
-import com.taxipro.manager.data.repository.dataStore
-
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.taxipro.manager.ui.screens.HistoryScreen
-import com.taxipro.manager.ui.screens.SettingsScreen
+import com.taxipro.manager.data.local.TaxiDatabase
+import com.taxipro.manager.data.repository.TaxiRepository
+import com.taxipro.manager.data.repository.UserPreferencesRepository
+import com.taxipro.manager.ui.screens.DashboardScreen
 import com.taxipro.manager.ui.screens.ExpensesScreen
-import com.taxipro.manager.ui.screens.ShiftDetailsScreen
+import com.taxipro.manager.ui.screens.HistoryScreen
 import com.taxipro.manager.ui.screens.ReportsScreen
+import com.taxipro.manager.ui.screens.SettingsScreen
+import com.taxipro.manager.ui.screens.ShiftDetailsScreen
+import com.taxipro.manager.ui.theme.TaxiManagerTheme
+import com.taxipro.manager.ui.viewmodel.MainViewModel
+import com.taxipro.manager.ui.viewmodel.MainViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,13 +63,13 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                         "shift_details" -> {
-                            if (selectedShiftId != null) {
+                            selectedShiftId?.let { shiftId ->
                                 ShiftDetailsScreen(
-                                    shiftId = selectedShiftId!!,
+                                    shiftId = shiftId,
                                     viewModel = viewModel,
                                     onBackClick = { currentScreen = "history" }
                                 )
-                            } else {
+                            } ?: run {
                                 currentScreen = "history"
                             }
                         }
