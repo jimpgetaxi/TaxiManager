@@ -27,6 +27,7 @@ import com.taxipro.manager.ui.screens.HistoryScreen
 import com.taxipro.manager.ui.screens.SettingsScreen
 import com.taxipro.manager.ui.screens.ExpensesScreen
 import com.taxipro.manager.ui.screens.ShiftDetailsScreen
+import com.taxipro.manager.ui.screens.ReportsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,7 +54,8 @@ class MainActivity : ComponentActivity() {
                             viewModel = viewModel,
                             onHistoryClick = { currentScreen = "history" },
                             onSettingsClick = { currentScreen = "settings" },
-                            onExpensesClick = { currentScreen = "expenses" }
+                            onExpensesClick = { currentScreen = "expenses" },
+                            onReportsClick = { currentScreen = "reports" }
                         )
                         "history" -> HistoryScreen(
                             viewModel = viewModel,
@@ -79,6 +81,10 @@ class MainActivity : ComponentActivity() {
                             onBackClick = { currentScreen = "dashboard" }
                         )
                         "expenses" -> ExpensesScreen(
+                            viewModel = viewModel,
+                            onBackClick = { currentScreen = "dashboard" }
+                        )
+                        "reports" -> ReportsScreen(
                             viewModel = viewModel,
                             onBackClick = { currentScreen = "dashboard" }
                         )

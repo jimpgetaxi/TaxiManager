@@ -68,5 +68,17 @@
     <string name="distance_label">Απόσταση</string>
     <string name="back_desc">Πίσω</string>
     <string name="edit_desc">Επεξεργασία</string>
-    <string name="history_desc">Ιστορικό</string>
+    <string name="history_desc">History</string>
+
+    <!-- Reports -->
+    <string name="reports_title">Reports</string>
+    <string name="monthly_tab">Monthly</string>
+    <string name="yearly_tab">Yearly</string>
+    <string name="total_income">Total Income</string>
+    <string name="total_expenses_label">Total Expenses</string>
+    <string name="net_income">Net Income</string>
+    <string name="vat_analysis">VAT Analysis</string>
+    <string name="vat_collected">Collected</string>
+    <string name="vat_deductible">Deductible</string>
+    <string name="vat_payable">Payable</string>
 </resources>

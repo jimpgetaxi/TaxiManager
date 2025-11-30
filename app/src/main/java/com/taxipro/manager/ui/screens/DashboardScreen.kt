@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
@@ -32,7 +33,8 @@ fun DashboardScreen(
     viewModel: MainViewModel,
     onHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onExpensesClick: () -> Unit
+    onExpensesClick: () -> Unit,
+    onReportsClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showStartShiftDialog by remember { mutableStateOf(false) }
@@ -45,6 +47,9 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
+                    IconButton(onClick = onReportsClick) {
+                        Icon(Icons.Default.Info, contentDescription = stringResource(R.string.reports_title))
+                    }
                     IconButton(onClick = onExpensesClick) {
                         Icon(Icons.Default.ShoppingCart, contentDescription = stringResource(R.string.expenses_title))
                     }

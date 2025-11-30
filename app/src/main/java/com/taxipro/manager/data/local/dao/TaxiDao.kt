@@ -36,6 +36,19 @@ interface TaxiDao {
     """)
     fun getShiftSummaries(): Flow<List<ShiftSummary>>
 
+    @Query("""
+        SELECT 
+            shifts.*, 
+            SUM(jobs.revenue) as totalRevenue, 
+            SUM(jobs.receiptAmount) as totalReceipts 
+        FROM shifts 
+        LEFT JOIN jobs ON shifts.id = jobs.shiftId 
+        WHERE shifts.startTime BETWEEN :start AND :end
+        GROUP BY shifts.id 
+        ORDER BY shifts.startTime DESC
+    """)
+    fun getShiftSummariesInRange(start: Long, end: Long): Flow<List<ShiftSummary>>
+
     @Query("SELECT * FROM shifts WHERE id = :shiftId")
     fun getShiftById(shiftId: Long): Flow<Shift?>
 

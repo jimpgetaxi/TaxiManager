@@ -77,4 +77,9 @@ class TaxiRepository(
     fun getJobsForShift(shiftId: Long): Flow<List<Job>> = taxiDao.getJobsForShift(shiftId)
     
     fun getShiftRevenue(shiftId: Long): Flow<Double?> = taxiDao.getTotalRevenueForShift(shiftId)
+
+    // Reports
+    fun getShiftSummariesInRange(start: Long, end: Long): Flow<List<ShiftSummary>> = taxiDao.getShiftSummariesInRange(start, end)
+
+    fun getExpensesInRange(start: Long, end: Long): Flow<List<Expense>> = expenseDao.getExpensesInRange(start, end)
 }

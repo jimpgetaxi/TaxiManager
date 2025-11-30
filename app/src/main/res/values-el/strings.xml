@@ -69,4 +69,16 @@
     <string name="back_desc">Πίσω</string>
     <string name="edit_desc">Επεξεργασία</string>
     <string name="history_desc">Ιστορικό</string>
+
+    <!-- Reports -->
+    <string name="reports_title">Αναφορές</string>
+    <string name="monthly_tab">Μηνιαία</string>
+    <string name="yearly_tab">Ετήσια</string>
+    <string name="total_income">Συνολικά Έσοδα</string>
+    <string name="total_expenses_label">Συνολικά Έξοδα</string>
+    <string name="net_income">Καθαρό Κέρδος</string>
+    <string name="vat_analysis">Ανάλυση ΦΠΑ</string>
+    <string name="vat_collected">Εισπρακτέο</string>
+    <string name="vat_deductible">Εκπιπτώμενο</string>
+    <string name="vat_payable">Πληρωτέο</string>
 </resources>

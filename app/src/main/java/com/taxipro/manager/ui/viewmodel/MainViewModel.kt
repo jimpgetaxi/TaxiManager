@@ -15,6 +15,24 @@ import com.taxipro.manager.data.local.entity.Expense
 
 import com.taxipro.manager.data.local.entity.ShiftSummary
 
+import java.util.Calendar
+
+enum class ReportPeriod {
+    MONTHLY, YEARLY
+}
+
+data class ReportsUiState(
+    val reportPeriod: ReportPeriod = ReportPeriod.MONTHLY,
+    val selectedDate: Long = System.currentTimeMillis(),
+    val totalIncome: Double = 0.0,
+    val totalExpenses: Double = 0.0,
+    val netIncome: Double = 0.0,
+    val vatCollected: Double = 0.0,
+    val vatDeductible: Double = 0.0,
+    val vatPayable: Double = 0.0,
+    val currencySymbol: String = "€"
+)
+
 data class DashboardUiState(
     val activeShift: Shift? = null,
     val currentJobs: List<Job> = emptyList(),
@@ -36,6 +54,10 @@ class MainViewModel(
     private val _activeShift = repository.activeShift
     private val _currencySymbol = userPreferencesRepository.currencySymbol
 
+    // Reports State
+    private val _reportPeriod = MutableStateFlow(ReportPeriod.MONTHLY)
+    private val _reportSelectedDate = MutableStateFlow(System.currentTimeMillis())
+
     val initialHistoricalKm = userPreferencesRepository.initialHistoricalKm
     val initialHistoricalExpenses = userPreferencesRepository.initialHistoricalExpenses
     
@@ -56,6 +78,42 @@ class MainViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
+    val reportsUiState: StateFlow<ReportsUiState> = combine(
+        _reportPeriod,
+        _reportSelectedDate,
+        _currencySymbol
+    ) { period, date, currency ->
+        Triple(period, date, currency)
+    }.flatMapLatest { (period, date, currency) ->
+        val (start, end) = calculateDateRange(period, date)
+        
+        combine(
+            repository.getShiftSummariesInRange(start, end),
+            repository.getExpensesInRange(start, end)
+        ) { shifts, expenses ->
+            val totalIncome = shifts.sumOf { it.totalRevenue ?: 0.0 }
+            val totalExpenses = expenses.sumOf { it.amount }
+            val totalReceipts = shifts.sumOf { it.totalReceipts ?: 0.0 }
+            
+            // VAT Calculation (assuming 13% included in receipts)
+            val vatCollected = (totalReceipts / 1.13) * 0.13
+            val vatDeductible = expenses.sumOf { it.vatAmount }
+            
+            ReportsUiState(
+                reportPeriod = period,
+                selectedDate = date,
+                totalIncome = totalIncome,
+                totalExpenses = totalExpenses,
+                netIncome = totalIncome - totalExpenses,
+                vatCollected = vatCollected,
+                vatDeductible = vatDeductible,
+                vatPayable = vatCollected - vatDeductible,
+                currencySymbol = currency
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReportsUiState())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<DashboardUiState> = combine(
         _activeShift,
         _currencySymbol,
@@ -66,7 +124,7 @@ class MainViewModel(
     }.flatMapLatest { (shiftAndCurrency, costPerKmValue, deductibleVat) ->
         val (shift, currency) = shiftAndCurrency
         if (shift == null) {
-            flowOf(DashboardUiState(currencySymbol = currency, totalDeductibleVat = deductibleVat, payableVat = 0.0 - deductibleVat)) // Even without shift, we might have expenses VAT? Maybe not relevant for dashboard current shift context but good for general view. Actually dashboard focuses on current shift revenue. But VAT is global/daily usually. Let's keep it simple.
+            flowOf(DashboardUiState(currencySymbol = currency, totalDeductibleVat = deductibleVat, payableVat = 0.0 - deductibleVat))
         } else {
             combine(
                 repository.getJobsForShift(shift.id),
@@ -82,42 +140,6 @@ class MainViewModel(
                 val totalReceipts = jobs.sumOf { it.receiptAmount ?: 0.0 }
                 // Calculate VAT (13%) included in the gross receipt amount
                 val totalRevenueVat = (totalReceipts / 1.13) * 0.13
-                
-                // Payable VAT = Revenue VAT - Deductible VAT (from Expenses)
-                // Note: This deductibleVat is GLOBAL (all time) based on the repository query currently. 
-                // Ideally, for a "shift" dashboard, we might want daily VAT? 
-                // But the user asked for "Payable VAT of the day" which implies we might need filtering by date.
-                // However, the requirement was just "Payable VAT". Given the current app structure, 
-                // let's just show the running total or maybe we should filter expenses by shift start time?
-                // For now, I will use the total deductible VAT as per the repository method `getTotalDeductibleVat`.
-                // Wait, `getTotalDeductibleVat` in DAO is `SELECT SUM(vatAmount) FROM expenses`. This is ALL time.
-                // `totalRevenueVat` here is ONLY for the CURRENT shift.
-                // Subtracting ALL time expenses VAT from CURRENT shift revenue VAT might result in a huge negative number.
-                // This might be confusing. 
-                // Let's assume for now the user wants to see the impact of expenses on the current shift's VAT liability 
-                // OR maybe they want to see the "Today's" VAT status.
-                // Since we don't have "Daily" context explicitly outside of a shift, I will calculate it as:
-                // Payable VAT (Active Shift Context) = (Revenue VAT of Shift) - (Expenses VAT of Today/Shift Duration?).
-                // To keep it simple and robust without complex date filtering in SQL yet:
-                // I will just display the values available.
-                // Actually, usually "Payable VAT" is calculated quarterly. 
-                // Let's just show "Deductible VAT" as a separate stat or subtract it if it makes sense time-wise.
-                // For the Dashboard of the *current shift*, maybe it's best to just show the Shift's VAT.
-                // But the user asked "options for invoice to be deducted from current day VAT".
-                // So we probably need to filter expenses by date.
-                // For this step, I will pass the total deductible VAT to the state, and we can refine the time-window later if needed.
-                // Let's calculate "Net VAT" = `totalRevenueVat` - `deductibleVat`.
-                // But wait, if `deductibleVat` is ALL time, it's wrong to subtract from ONE shift.
-                // I should probably just Add the property to UI State and let the UI decide or
-                // better, for now, let's assume we only show this calculation correctly if we had a "Daily" view.
-                // BUT, the prompt said "deducted from current day VAT".
-                // So I should filter expenses for "Today".
-                // That requires a new DAO query.
-                // For now, to proceed with the plan, I will just wire up the global deductible VAT 
-                // but I strongly suggest we refine this to "Today's Expenses" in the next step or I can add a filter now.
-                // I'll stick to the plan: Integrate the logic.
-                // I will calculate `payableVat` as `totalRevenueVat - deductibleVat` (Global for now, as a placeholder, but be aware).
-                // Actually, let's just pass `deductibleVat` and `payableVat` (simple subtraction).
                 
                 val payableVat = totalRevenueVat - deductibleVat
 
@@ -136,6 +158,51 @@ class MainViewModel(
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
+
+    private fun calculateDateRange(period: ReportPeriod, dateInMillis: Long): Pair<Long, Long> {
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = dateInMillis
+        
+        val start: Long
+        val end: Long
+        
+        when (period) {
+            ReportPeriod.MONTHLY -> {
+                calendar.set(Calendar.DAY_OF_MONTH, 1)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                start = calendar.timeInMillis
+                
+                calendar.add(Calendar.MONTH, 1)
+                calendar.add(Calendar.MILLISECOND, -1)
+                end = calendar.timeInMillis
+            }
+            ReportPeriod.YEARLY -> {
+                calendar.set(Calendar.MONTH, Calendar.JANUARY)
+                calendar.set(Calendar.DAY_OF_MONTH, 1)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                start = calendar.timeInMillis
+                
+                calendar.add(Calendar.YEAR, 1)
+                calendar.add(Calendar.MILLISECOND, -1)
+                end = calendar.timeInMillis
+            }
+        }
+        return start to end
+    }
+
+    fun setReportPeriod(period: ReportPeriod) {
+        _reportPeriod.value = period
+    }
+
+    fun setReportDate(dateInMillis: Long) {
+        _reportSelectedDate.value = dateInMillis
+    }
 
     fun addExpense(expense: Expense) {
         viewModelScope.launch {
