@@ -10,7 +10,7 @@ import com.taxipro.manager.data.local.entity.Expense
 import com.taxipro.manager.data.local.entity.Job
 import com.taxipro.manager.data.local.entity.Shift
 
-@Database(entities = [Shift::class, Job::class, Expense::class], version = 4, exportSchema = false)
+@Database(entities = [Shift::class, Job::class, Expense::class], version = 5, exportSchema = false)
 abstract class TaxiDatabase : RoomDatabase() {
     abstract fun taxiDao(): TaxiDao
     abstract fun expenseDao(): ExpenseDao

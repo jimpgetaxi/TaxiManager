@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         val database = TaxiDatabase.getDatabase(this)
-        val repository = TaxiRepository(database.taxiDao(), database.expenseDao())
+        val repository = TaxiRepository(database, database.taxiDao(), database.expenseDao())
         val userPreferencesRepository = UserPreferencesRepository(this)
         val viewModelFactory = MainViewModelFactory(repository, userPreferencesRepository)
         val viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]

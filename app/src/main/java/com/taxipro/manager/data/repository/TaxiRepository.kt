@@ -1,5 +1,7 @@
 package com.taxipro.manager.data.repository
 
+import androidx.sqlite.db.SimpleSQLiteQuery
+import com.taxipro.manager.data.local.TaxiDatabase
 import com.taxipro.manager.data.local.dao.ExpenseDao
 import com.taxipro.manager.data.local.dao.TaxiDao
 import com.taxipro.manager.data.local.entity.Expense
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.map
 import com.taxipro.manager.data.local.entity.ShiftSummary
 
 class TaxiRepository(
+    private val database: TaxiDatabase,
     private val taxiDao: TaxiDao,
     private val expenseDao: ExpenseDao
 ) {
@@ -31,6 +34,7 @@ class TaxiRepository(
 
     suspend fun endShift(shift: Shift, endOdometer: Double, vehicleCost: Double) {
         val updatedShift = shift.copy(
+            endTime = System.currentTimeMillis(),
             endOdometer = endOdometer,
             vehicleCost = vehicleCost,
             isActive = false
@@ -82,4 +86,8 @@ class TaxiRepository(
     fun getShiftSummariesInRange(start: Long, end: Long): Flow<List<ShiftSummary>> = taxiDao.getShiftSummariesInRange(start, end)
 
     fun getExpensesInRange(start: Long, end: Long): Flow<List<Expense>> = expenseDao.getExpensesInRange(start, end)
+
+    suspend fun checkpoint() {
+        database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)")
+    }
 }

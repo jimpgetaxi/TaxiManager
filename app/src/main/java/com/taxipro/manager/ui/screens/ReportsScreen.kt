@@ -1,5 +1,8 @@
 package com.taxipro.manager.ui.screens
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -7,19 +10,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.taxipro.manager.R
 import com.taxipro.manager.ui.viewmodel.MainViewModel
 import com.taxipro.manager.ui.viewmodel.ReportPeriod
+import com.taxipro.manager.utils.CsvExporter
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -32,9 +41,12 @@ fun ReportsScreen(
     val state by viewModel.reportsUiState.collectAsState()
     val reportPeriod = state.reportPeriod
     val selectedDate = state.selectedDate
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     val monthFormat = SimpleDateFormat("MMMM yyyy", Locale.forLanguageTag("el-GR"))
     val yearFormat = SimpleDateFormat("yyyy", Locale.forLanguageTag("el-GR"))
+    val fileDateFormat = SimpleDateFormat("yyyy_MM", Locale.getDefault())
 
     Scaffold(
         topBar = {
@@ -43,6 +55,42 @@ fun ReportsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_desc))
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        scope.launch {
+                            val (shifts, expenses) = viewModel.getReportData().first()
+                            val dateStr = fileDateFormat.format(Date(selectedDate))
+                            
+                            val shiftsUri = CsvExporter.exportShifts(
+                                context, 
+                                shifts, 
+                                "shifts_report_$dateStr.csv"
+                            )
+                            val expensesUri = CsvExporter.exportExpenses(
+                                context, 
+                                expenses, 
+                                "expenses_report_$dateStr.csv"
+                            )
+                            
+                            if (shiftsUri != null && expensesUri != null) {
+                                val uris = ArrayList<Uri>()
+                                uris.add(shiftsUri)
+                                uris.add(expensesUri)
+                                
+                                val shareIntent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                    type = "text/csv"
+                                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(Intent.createChooser(shareIntent, "Export Report"))
+                            } else {
+                                Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }) {
+                        Icon(Icons.Default.Share, contentDescription = "Export Report")
                     }
                 }
             )

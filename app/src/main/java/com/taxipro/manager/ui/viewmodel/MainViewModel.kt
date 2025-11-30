@@ -273,6 +273,18 @@ class MainViewModel(
     fun getShift(shiftId: Long): Flow<Shift?> = repository.getShiftById(shiftId)
     fun getJobs(shiftId: Long): Flow<List<Job>> = repository.getJobsForShift(shiftId)
 
+    fun getReportData(): Flow<Pair<List<ShiftSummary>, List<Expense>>> {
+        val state = reportsUiState.value
+        val (start, end) = calculateDateRange(state.reportPeriod, state.selectedDate)
+        
+        return combine(
+            repository.getShiftSummariesInRange(start, end),
+            repository.getExpensesInRange(start, end)
+        ) { shifts, expenses ->
+            Pair(shifts, expenses)
+        }
+    }
+
     fun updateCurrency(symbol: String) {
         viewModelScope.launch {
             userPreferencesRepository.setCurrencySymbol(symbol)
@@ -284,6 +296,10 @@ class MainViewModel(
             userPreferencesRepository.setInitialHistoricalKm(km)
             userPreferencesRepository.setInitialHistoricalExpenses(expenses)
         }
+    }
+
+    suspend fun checkpoint() {
+        repository.checkpoint()
     }
 }
 
