@@ -3,6 +3,8 @@ package com.taxipro.manager.utils
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -14,7 +16,7 @@ object DatabaseBackupUtils {
 
     private const val DB_NAME = "taxi_database"
 
-    fun backupDatabase(context: Context): Uri? {
+    suspend fun backupDatabase(context: Context): Uri? = withContext(Dispatchers.IO) {
         val dbFile = context.getDatabasePath(DB_NAME)
         val dbWalFile = context.getDatabasePath("$DB_NAME-wal")
         val dbShmFile = context.getDatabasePath("$DB_NAME-shm")
@@ -24,20 +26,20 @@ object DatabaseBackupUtils {
         try {
             FileOutputStream(backupFile).use { fos ->
                 ZipOutputStream(fos).use { zos ->
-                    addToZip(zos, dbFile)
+                    if (dbFile.exists()) addToZip(zos, dbFile)
                     if (dbWalFile.exists()) addToZip(zos, dbWalFile)
                     if (dbShmFile.exists()) addToZip(zos, dbShmFile)
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            return null
+            return@withContext null
         }
 
-        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", backupFile)
+        return@withContext FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", backupFile)
     }
 
-    fun restoreDatabase(context: Context, backupUri: Uri): Boolean {
+    suspend fun restoreDatabase(context: Context, backupUri: Uri): Boolean = withContext(Dispatchers.IO) {
         val dbFile = context.getDatabasePath(DB_NAME)
         val dbWalFile = context.getDatabasePath("$DB_NAME-wal")
         val dbShmFile = context.getDatabasePath("$DB_NAME-shm")
@@ -52,6 +54,12 @@ object DatabaseBackupUtils {
                 ZipInputStream(inputStream).use { zis ->
                     var entry = zis.nextEntry
                     while (entry != null) {
+                        // Security check: prevent zip path traversal
+                        if (entry.name.contains("..")) {
+                             entry = zis.nextEntry
+                             continue
+                        }
+
                         val targetFile = context.getDatabasePath(entry.name)
                         // Ensure parent dir exists
                         targetFile.parentFile?.mkdirs()
@@ -67,10 +75,10 @@ object DatabaseBackupUtils {
                     }
                 }
             }
-            return true
+            return@withContext true
         } catch (e: Exception) {
             e.printStackTrace()
-            return false
+            return@withContext false
         }
     }
 

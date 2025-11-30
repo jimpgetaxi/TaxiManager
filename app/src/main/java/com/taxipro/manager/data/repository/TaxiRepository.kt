@@ -88,6 +88,6 @@ class TaxiRepository(
     fun getExpensesInRange(start: Long, end: Long): Flow<List<Expense>> = expenseDao.getExpensesInRange(start, end)
 
     suspend fun checkpoint() {
-        database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)")
+        database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)").close()
     }
 }
