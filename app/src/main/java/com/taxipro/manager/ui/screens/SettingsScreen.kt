@@ -61,11 +61,23 @@ fun SettingsScreen(
                 val success = DatabaseBackupUtils.restoreDatabase(context, it)
                 if (success) {
                     Toast.makeText(context, "Restore successful. Please restart the app.", Toast.LENGTH_LONG).show()
-                    // Ideally, we should trigger a restart or re-initialization here.
-                    // For now, closing the app or navigating back might be safest to force DB reload.
                     (context as? Activity)?.finish()
                 } else {
                     Toast.makeText(context, "Restore failed", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        uri?.let {
+            scope.launch {
+                viewModel.checkpoint() // Ensure WAL is flushed
+                val success = DatabaseBackupUtils.backupDatabaseToUri(context, it)
+                if (success) {
+                    Toast.makeText(context, "Backup saved successfully!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Backup failed", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -186,20 +198,8 @@ fun SettingsScreen(
 
                     Button(
                         onClick = {
-                            scope.launch {
-                                viewModel.checkpoint() // Ensure WAL is flushed
-                                val backupUri = DatabaseBackupUtils.backupDatabase(context)
-                                if (backupUri != null) {
-                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "application/zip"
-                                        putExtra(Intent.EXTRA_STREAM, backupUri)
-                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    }
-                                    context.startActivity(Intent.createChooser(shareIntent, "Backup Database"))
-                                } else {
-                                    Toast.makeText(context, "Backup failed", Toast.LENGTH_SHORT).show()
-                                }
-                            }
+                            val filename = "taxi_backup_${System.currentTimeMillis()}.zip"
+                            backupLauncher.launch(filename)
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {

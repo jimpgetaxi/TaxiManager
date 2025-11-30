@@ -39,6 +39,26 @@ object DatabaseBackupUtils {
         return@withContext FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", backupFile)
     }
 
+    suspend fun backupDatabaseToUri(context: Context, targetUri: Uri): Boolean = withContext(Dispatchers.IO) {
+        val dbFile = context.getDatabasePath(DB_NAME)
+        val dbWalFile = context.getDatabasePath("$DB_NAME-wal")
+        val dbShmFile = context.getDatabasePath("$DB_NAME-shm")
+
+        try {
+            context.contentResolver.openOutputStream(targetUri)?.use { fos ->
+                ZipOutputStream(fos).use { zos ->
+                    if (dbFile.exists()) addToZip(zos, dbFile)
+                    if (dbWalFile.exists()) addToZip(zos, dbWalFile)
+                    if (dbShmFile.exists()) addToZip(zos, dbShmFile)
+                }
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     suspend fun restoreDatabase(context: Context, backupUri: Uri): Boolean = withContext(Dispatchers.IO) {
         val dbFile = context.getDatabasePath(DB_NAME)
         val dbWalFile = context.getDatabasePath("$DB_NAME-wal")
