@@ -200,7 +200,7 @@ fun EditShiftFullDialog(
     val calendar = Calendar.getInstance()
     calendar.timeInMillis = shift.startTime
     
-    var selectedDate by remember { mutableStateOf(shift.startTime) }
+    var selectedDate by remember { mutableLongStateOf(shift.startTime) }
     var startOdometer by remember { mutableStateOf(shift.startOdometer.toString()) }
     var endOdometer by remember { mutableStateOf(shift.endOdometer?.toString() ?: "") }
 
