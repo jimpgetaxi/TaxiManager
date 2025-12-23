@@ -19,6 +19,7 @@ import com.taxipro.manager.data.repository.TaxiRepository
 import com.taxipro.manager.data.repository.UserPreferencesRepository
 import com.taxipro.manager.ui.screens.DashboardScreen
 import com.taxipro.manager.ui.screens.ExpensesScreen
+import com.taxipro.manager.ui.screens.ForecastScreen
 import com.taxipro.manager.ui.screens.HistoryScreen
 import com.taxipro.manager.ui.screens.ReceivablesScreen
 import com.taxipro.manager.ui.screens.RecurringExpensesScreen
@@ -38,6 +39,7 @@ sealed class Screen {
     data object Expenses : Screen()
     data object Reports : Screen()
     data object Receivables : Screen()
+    data object Forecast : Screen()
 }
 
 class MainActivity : ComponentActivity() {
@@ -50,7 +52,8 @@ class MainActivity : ComponentActivity() {
             database, 
             database.taxiDao(), 
             database.expenseDao(), 
-            database.recurringExpenseDao()
+            database.recurringExpenseDao(),
+            database.installmentDao()
         )
         val userPreferencesRepository = UserPreferencesRepository(this)
         val viewModelFactory = MainViewModelFactory(repository, userPreferencesRepository)
@@ -79,7 +82,8 @@ class MainActivity : ComponentActivity() {
                 onSettingsClick = { currentScreen = Screen.Settings },
                 onExpensesClick = { currentScreen = Screen.Expenses },
                 onReportsClick = { currentScreen = Screen.Reports },
-                onReceivablesClick = { currentScreen = Screen.Receivables }
+                onReceivablesClick = { currentScreen = Screen.Receivables },
+                onForecastClick = { currentScreen = Screen.Forecast }
             )
             is Screen.History -> HistoryScreen(
                 viewModel = viewModel,
@@ -109,6 +113,10 @@ class MainActivity : ComponentActivity() {
                 onBackClick = { currentScreen = Screen.Dashboard }
             )
             is Screen.Receivables -> ReceivablesScreen(
+                viewModel = viewModel,
+                onBackClick = { currentScreen = Screen.Dashboard }
+            )
+            is Screen.Forecast -> ForecastScreen(
                 viewModel = viewModel,
                 onBackClick = { currentScreen = Screen.Dashboard }
             )

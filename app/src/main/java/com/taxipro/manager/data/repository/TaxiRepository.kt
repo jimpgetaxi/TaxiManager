@@ -2,30 +2,23 @@ package com.taxipro.manager.data.repository
 
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.taxipro.manager.data.local.TaxiDatabase
-import com.taxipro.manager.data.local.dao.ExpenseDao
-import com.taxipro.manager.data.local.dao.TaxiDao
-import com.taxipro.manager.data.local.entity.Expense
-import com.taxipro.manager.data.local.entity.Job
-import com.taxipro.manager.data.local.entity.PaymentType
-import com.taxipro.manager.data.local.entity.Shift
+import com.taxipro.manager.data.local.dao.*
+import com.taxipro.manager.data.local.entity.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-
-import com.taxipro.manager.data.local.entity.ShiftSummary
-
-import com.taxipro.manager.data.local.dao.RecurringExpenseDao
-import com.taxipro.manager.data.local.entity.RecurringExpense
 
 class TaxiRepository(
     private val database: TaxiDatabase,
     private val taxiDao: TaxiDao,
     private val expenseDao: ExpenseDao,
-    private val recurringExpenseDao: RecurringExpenseDao
+    private val recurringExpenseDao: RecurringExpenseDao,
+    private val installmentDao: InstallmentDao
 ) {
     val activeShift: Flow<Shift?> = taxiDao.getActiveShift()
     val shiftHistory: Flow<List<ShiftSummary>> = taxiDao.getShiftSummaries()
     val allExpenses: Flow<List<Expense>> = expenseDao.getAllExpenses()
     val allRecurringExpenses: Flow<List<RecurringExpense>> = recurringExpenseDao.getAllRecurringExpenses()
+    val allInstallments: Flow<List<Installment>> = installmentDao.getAllInstallments()
 
     fun getShiftById(shiftId: Long): Flow<Shift?> = taxiDao.getShiftById(shiftId)
 
@@ -101,6 +94,21 @@ class TaxiRepository(
     suspend fun deleteRecurringExpense(recurringExpense: RecurringExpense) {
         recurringExpenseDao.deleteRecurringExpense(recurringExpense)
     }
+
+    // Installment Operations
+    suspend fun addInstallment(installment: Installment): Long {
+        return installmentDao.insertInstallment(installment)
+    }
+
+    suspend fun updateInstallment(installment: Installment) {
+        installmentDao.updateInstallment(installment)
+    }
+
+    suspend fun deleteInstallment(installment: Installment) {
+        installmentDao.deleteInstallment(installment)
+    }
+
+    fun getActiveInstallments(): Flow<List<Installment>> = installmentDao.getActiveInstallments()
 
     fun getTotalExpensesForCostPerKm(): Flow<Double> = expenseDao.getTotalExpensesForCostPerKm().map { it ?: 0.0 }
     

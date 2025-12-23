@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.taxipro.manager.R
 import com.taxipro.manager.data.local.entity.Expense
+import com.taxipro.manager.data.local.entity.PaymentMethod
 import com.taxipro.manager.ui.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -97,7 +98,7 @@ fun ExpensesScreen(
         AddExpenseDialog(
             currencySymbol = uiState.currencySymbol,
             onDismiss = { showAddExpenseDialog = false },
-            onConfirm = { description, amount, isInvoice, vatRate, manualVatAmount, affectsCost ->
+            onConfirm = { description, amount, isInvoice, vatRate, manualVatAmount, affectsCost, paymentMethod, installments ->
                 // Calculate VAT amount based on selection
                 val calculatedVat = if (isInvoice) {
                     when (vatRate) {
@@ -109,14 +110,14 @@ fun ExpensesScreen(
                     0.0
                 }
 
-                val expense = Expense(
-                    timestamp = System.currentTimeMillis(),
-                    description = description,
-                    amount = amount,
-                    vatAmount = calculatedVat,
-                    affectsCostPerKm = affectsCost
+                viewModel.addExpense(
+                    desc = description,
+                    amt = amount,
+                    vAmt = calculatedVat,
+                    aff = affectsCost,
+                    meth = paymentMethod,
+                    insts = installments
                 )
-                viewModel.addExpense(expense)
                 showAddExpenseDialog = false
             }
         )
@@ -292,7 +293,7 @@ fun ExpenseItem(
 fun AddExpenseDialog(
     currencySymbol: String,
     onDismiss: () -> Unit,
-    onConfirm: (String, Double, Boolean, String, Double?, Boolean) -> Unit
+    onConfirm: (String, Double, Boolean, String, Double?, Boolean, PaymentMethod, Int) -> Unit
 ) {
     var description by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
@@ -300,6 +301,8 @@ fun AddExpenseDialog(
     var isInvoice by remember { mutableStateOf(false) }
     var vatRate by remember { mutableStateOf("13%") } // "13%", "24%", "Manual"
     var manualVatAmount by remember { mutableStateOf("") }
+    var paymentMethod by remember { mutableStateOf(PaymentMethod.CASH) }
+    var installments by remember { mutableStateOf("1") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -307,8 +310,38 @@ fun AddExpenseDialog(
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())
+                modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
+                // Payment Method Selector
+                Text("Τρόπος Πληρωμής:", style = MaterialTheme.typography.labelMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = paymentMethod == PaymentMethod.CASH,
+                        onClick = { paymentMethod = PaymentMethod.CASH },
+                        label = { Text("Μετρητά") }
+                    )
+                    FilterChip(
+                        selected = paymentMethod == PaymentMethod.BANK,
+                        onClick = { paymentMethod = PaymentMethod.BANK },
+                        label = { Text("Τράπεζα") }
+                    )
+                    FilterChip(
+                        selected = paymentMethod == PaymentMethod.CREDIT_CARD,
+                        onClick = { paymentMethod = PaymentMethod.CREDIT_CARD },
+                        label = { Text("Πιστωτική") }
+                    )
+                }
+
+                if (paymentMethod == PaymentMethod.CREDIT_CARD) {
+                    OutlinedTextField(
+                        value = installments,
+                        onValueChange = { installments = it },
+                        label = { Text("Αριθμός Δόσεων") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
@@ -383,7 +416,9 @@ fun AddExpenseDialog(
                             isInvoice,
                             vatRate,
                             manualVatAmount.toDoubleOrNull(),
-                            affectsCost
+                            affectsCost,
+                            paymentMethod,
+                            installments.toIntOrNull() ?: 1
                         )
                     }
                 }

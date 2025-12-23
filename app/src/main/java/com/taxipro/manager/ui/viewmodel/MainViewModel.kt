@@ -3,24 +3,16 @@ package com.taxipro.manager.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.taxipro.manager.data.local.entity.Job
-import com.taxipro.manager.data.local.entity.Shift
+import com.taxipro.manager.data.local.entity.*
 import com.taxipro.manager.data.repository.TaxiRepository
 import com.taxipro.manager.data.repository.UserPreferencesRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
-import com.taxipro.manager.data.local.entity.Expense
-import com.taxipro.manager.data.local.entity.PaymentType
-import com.taxipro.manager.data.local.entity.RecurringExpense
-import com.taxipro.manager.data.local.entity.ShiftSummary
-
-import java.util.Calendar
-
-enum class ReportPeriod {
-    MONTHLY, YEARLY
-}
+enum class ReportPeriod { MONTHLY, YEARLY }
 
 data class ReportsUiState(
     val reportPeriod: ReportPeriod = ReportPeriod.MONTHLY,
@@ -39,12 +31,25 @@ data class DashboardUiState(
     val currentJobs: List<Job> = emptyList(),
     val currentRevenue: Double = 0.0,
     val totalReceipts: Double = 0.0,
-    val totalVat: Double = 0.0, // Revenue VAT
-    val totalDeductibleVat: Double = 0.0, // Expense VAT
-    val payableVat: Double = 0.0, // Revenue VAT - Expense VAT
+    val totalVat: Double = 0.0,
+    val totalDeductibleVat: Double = 0.0,
+    val payableVat: Double = 0.0,
     val currentMileage: Double = 0.0,
     val vehicleCostForCurrentShift: Double = 0.0,
+    val currencySymbol: String = "€",
+    val creditCardDebt: Double = 0.0
+)
+
+data class ForecastUiState(
+    val months: List<MonthForecast> = emptyList(),
     val currencySymbol: String = "€"
+)
+
+data class MonthForecast(
+    val monthName: String,
+    val totalExpenses: Double,
+    val recurringAmount: Double,
+    val installmentsAmount: Double
 )
 
 class MainViewModel(
@@ -52,329 +57,142 @@ class MainViewModel(
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    private val _activeShift = repository.activeShift
-    private val _currencySymbol = userPreferencesRepository.currencySymbol
-
-    // Reports State
     private val _reportPeriod = MutableStateFlow(ReportPeriod.MONTHLY)
     private val _reportSelectedDate = MutableStateFlow(System.currentTimeMillis())
+    private val _currencySymbol = userPreferencesRepository.currencySymbol
 
-    val initialHistoricalKm = userPreferencesRepository.initialHistoricalKm
-    val initialHistoricalExpenses = userPreferencesRepository.initialHistoricalExpenses
-    
     val allExpenses = repository.allExpenses.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val allRecurringExpenses = repository.allRecurringExpenses.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val unpaidJobs = repository.getUnpaidJobs().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val allInstallments = repository.allInstallments.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val shiftHistory: StateFlow<List<ShiftSummary>> = repository.shiftHistory.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val initialHistoricalKm = userPreferencesRepository.initialHistoricalKm
+    val initialHistoricalExpenses = userPreferencesRepository.initialHistoricalExpenses
 
     val costPerKm: StateFlow<Double> = combine(
         initialHistoricalKm,
         initialHistoricalExpenses,
         repository.getTotalKilometers(),
         repository.getTotalExpensesForCostPerKm()
-    ) { initKm, initExp, appKm, appExp ->
-        val totalKm = initKm + appKm
-        val totalExp = initExp + appExp
-        if (totalKm > 0) totalExp / totalKm else 0.0
+    ) { ik, ie, ak, ae ->
+        val tKm = (ik ?: 0.0) + (ak ?: 0.0)
+        val tExp = (ie ?: 0.0) + (ae ?: 0.0)
+        if (tKm > 0.0) tExp / tKm else 0.0
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    val shiftHistory: StateFlow<List<ShiftSummary>> = repository.shiftHistory
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     @OptIn(ExperimentalCoroutinesApi::class)
-    val reportsUiState: StateFlow<ReportsUiState> = combine(
-        _reportPeriod,
-        _reportSelectedDate,
-        _currencySymbol
-    ) { period, date, currency ->
-        Triple(period, date, currency)
-    }.flatMapLatest { (period, date, currency) ->
-        val (start, end) = calculateDateRange(period, date)
-        
-        combine(
-            repository.getShiftSummariesInRange(start, end),
-            repository.getExpensesInRange(start, end)
-        ) { shifts, expenses ->
-            val totalIncome = shifts.sumOf { it.totalRevenue ?: 0.0 }
-            val totalExpenses = expenses.sumOf { it.amount }
-            val totalReceipts = shifts.sumOf { it.totalReceipts ?: 0.0 }
-            
-            // VAT Calculation (assuming 13% included in receipts)
-            val vatCollected = (totalReceipts / 1.13) * 0.13
-            val vatDeductible = expenses.sumOf { it.vatAmount }
-            
-            ReportsUiState(
-                reportPeriod = period,
-                selectedDate = date,
-                totalIncome = totalIncome,
-                totalExpenses = totalExpenses,
-                netIncome = totalIncome - totalExpenses,
-                vatCollected = vatCollected,
-                vatDeductible = vatDeductible,
-                vatPayable = vatCollected - vatDeductible,
-                currencySymbol = currency
-            )
+    val reportsUiState: StateFlow<ReportsUiState> = combine(_reportPeriod, _reportSelectedDate, _currencySymbol) { p, d, c ->
+        val (s, e) = calculateDateRange(p, d)
+        repository.getShiftSummariesInRange(s, e).combine(repository.getExpensesInRange(s, e)) { sh, ex ->
+            val inc = sh.sumOf { it.totalRevenue ?: 0.0 }
+            val exp = ex.sumOf { it.amount }
+            val rec = sh.sumOf { it.totalReceipts ?: 0.0 }
+            val vC = (rec / 1.13) * 0.13
+            val vD = ex.sumOf { it.vatAmount }
+            ReportsUiState(p, d, inc, exp, inc - exp, vC, vD, vC - vD, c)
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReportsUiState())
+    }.flatMapLatest { it }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReportsUiState())
+
+    val forecastUiState: StateFlow<ForecastUiState> = combine(allRecurringExpenses, allInstallments, _currencySymbol) { rec, ins, cur ->
+        val list = mutableListOf<MonthForecast>()
+        val cal = Calendar.getInstance()
+        val fmt = SimpleDateFormat("MMMM yyyy", Locale.forLanguageTag("el-GR"))
+        for (i in 0 until 12) {
+            val m = cal.get(Calendar.MONTH)
+            val y = cal.get(Calendar.YEAR)
+            val rA = rec.filter { it.frequency == "MONTHLY" || (it.frequency == "YEARLY" && it.dayOfMonth == cal.get(Calendar.DAY_OF_YEAR)) }.sumOf { it.amount }
+            val iA = ins.filter {
+                val sCal = Calendar.getInstance().apply { timeInMillis = it.startDate }
+                val diff = (y - sCal.get(Calendar.YEAR)) * 12 + (m - sCal.get(Calendar.MONTH))
+                diff >= 0 && diff < it.totalInstallments
+            }.sumOf { it.monthlyAmount }
+            list.add(MonthForecast(fmt.format(cal.time), rA + iA, rA, iA))
+            cal.add(Calendar.MONTH, 1)
+        }
+        ForecastUiState(list, cur)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ForecastUiState())
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState: StateFlow<DashboardUiState> = combine(
-        _activeShift,
-        _currencySymbol,
-        costPerKm,
-        repository.getTotalDeductibleVat()
-    ) { shift, currency, costPerKmValue, deductibleVat ->
-        Triple(Pair(shift, currency), costPerKmValue, deductibleVat)
-    }.flatMapLatest { (shiftAndCurrency, costPerKmValue, deductibleVat) ->
-        val (shift, currency) = shiftAndCurrency
-        if (shift == null) {
-            flowOf(DashboardUiState(currencySymbol = currency, totalDeductibleVat = deductibleVat, payableVat = 0.0 - deductibleVat))
+    val uiState: StateFlow<DashboardUiState> = combine(repository.activeShift, _currencySymbol, costPerKm, repository.getTotalDeductibleVat(), allInstallments) { s, c, ck, dv, ins ->
+        val debt = ins.sumOf { it.monthlyAmount * it.remainingInstallments }
+        if (s == null) {
+            flowOf(DashboardUiState(null, emptyList(), 0.0, 0.0, 0.0, dv, -dv, 0.0, 0.0, c, debt))
         } else {
-            combine(
-                repository.getJobsForShift(shift.id),
-                repository.getShiftRevenue(shift.id)
-            ) { jobs, revenue ->
-                val maxJobOdometer = jobs.mapNotNull { it.currentOdometer }.maxOrNull()
-                val mileage = if (maxJobOdometer != null) {
-                     maxJobOdometer - shift.startOdometer
-                } else {
-                    0.0
-                }
-
-                val totalReceipts = jobs.sumOf { it.receiptAmount ?: 0.0 }
-                // Calculate VAT (13%) included in the gross receipt amount
-                val totalRevenueVat = (totalReceipts / 1.13) * 0.13
-                
-                val payableVat = totalRevenueVat - deductibleVat
-
-                DashboardUiState(
-                    activeShift = shift,
-                    currentJobs = jobs,
-                    currentRevenue = revenue ?: 0.0,
-                    totalReceipts = totalReceipts,
-                    totalVat = totalRevenueVat,
-                    totalDeductibleVat = deductibleVat,
-                    payableVat = payableVat,
-                    currentMileage = if (mileage > 0) mileage else 0.0,
-                    vehicleCostForCurrentShift = mileage * costPerKmValue,
-                    currencySymbol = currency
-                )
+            repository.getJobsForShift(s.id).combine(repository.getShiftRevenue(s.id)) { j, r ->
+                val mO = j.mapNotNull { it.currentOdometer }.maxOrNull()
+                val ml = if (mO != null) mO - s.startOdometer else 0.0
+                val rc = j.sumOf { it.receiptAmount ?: 0.0 }
+                val v = (rc / 1.13) * 0.13
+                DashboardUiState(s, j, r ?: 0.0, rc, v, dv, v - dv, if (ml > 0) ml else 0.0, ml * ck, c, debt)
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
+    }.flatMapLatest { it }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 
-    private fun calculateDateRange(period: ReportPeriod, dateInMillis: Long): Pair<Long, Long> {
-        val calendar = Calendar.getInstance()
-        calendar.timeInMillis = dateInMillis
-        
-        val start: Long
-        val end: Long
-        
-        when (period) {
-            ReportPeriod.MONTHLY -> {
-                calendar.set(Calendar.DAY_OF_MONTH, 1)
-                calendar.set(Calendar.HOUR_OF_DAY, 0)
-                calendar.set(Calendar.MINUTE, 0)
-                calendar.set(Calendar.SECOND, 0)
-                calendar.set(Calendar.MILLISECOND, 0)
-                start = calendar.timeInMillis
-                
-                calendar.add(Calendar.MONTH, 1)
-                calendar.add(Calendar.MILLISECOND, -1)
-                end = calendar.timeInMillis
-            }
-            ReportPeriod.YEARLY -> {
-                calendar.set(Calendar.MONTH, Calendar.JANUARY)
-                calendar.set(Calendar.DAY_OF_MONTH, 1)
-                calendar.set(Calendar.HOUR_OF_DAY, 0)
-                calendar.set(Calendar.MINUTE, 0)
-                calendar.set(Calendar.SECOND, 0)
-                calendar.set(Calendar.MILLISECOND, 0)
-                start = calendar.timeInMillis
-                
-                calendar.add(Calendar.YEAR, 1)
-                calendar.add(Calendar.MILLISECOND, -1)
-                end = calendar.timeInMillis
+    private fun calculateDateRange(p: ReportPeriod, d: Long): Pair<Long, Long> {
+        val cal = Calendar.getInstance().apply { timeInMillis = d }
+        val s: Long
+        val e: Long
+        if (p == ReportPeriod.MONTHLY) {
+            cal.set(Calendar.DAY_OF_MONTH, 1); cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+            s = cal.timeInMillis
+            cal.add(Calendar.MONTH, 1); cal.add(Calendar.MILLISECOND, -1)
+            e = cal.timeInMillis
+        } else {
+            cal.set(Calendar.MONTH, Calendar.JANUARY); cal.set(Calendar.DAY_OF_MONTH, 1); cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+            s = cal.timeInMillis
+            cal.add(Calendar.YEAR, 1); cal.add(Calendar.MILLISECOND, -1)
+            e = cal.timeInMillis
+        }
+        return s to e
+    }
+
+    fun setReportPeriod(p: ReportPeriod) { _reportPeriod.value = p }
+    fun setReportDate(d: Long) { _reportSelectedDate.value = d }
+
+    fun addExpense(desc: String, amt: Double, vAmt: Double, aff: Boolean, meth: PaymentMethod, insts: Int) {
+        viewModelScope.launch {
+            if (meth == PaymentMethod.CREDIT_CARD && insts > 1) {
+                val mon = amt / insts
+                val iId = repository.addInstallment(Installment(0, desc, amt, mon, insts, insts, System.currentTimeMillis(), null, System.currentTimeMillis()))
+                repository.addExpense(Expense(0, System.currentTimeMillis(), "$desc (1/$insts)", mon, vAmt / insts, aff, PaymentMethod.CREDIT_CARD, iId))
+            } else {
+                repository.addExpense(Expense(0, System.currentTimeMillis(), desc, amt, vAmt, aff, meth))
             }
         }
-        return start to end
     }
 
-    fun setReportPeriod(period: ReportPeriod) {
-        _reportPeriod.value = period
+    fun applyRecurringExpense(re: RecurringExpense, d: Long) { addExpense(re.description, re.amount, re.vatAmount, re.affectsCostPerKm, PaymentMethod.CASH, 1) }
+    fun deleteExpense(e: Expense) { viewModelScope.launch { repository.deleteExpense(e) } }
+    fun addRecurringExpense(re: RecurringExpense) { viewModelScope.launch { repository.addRecurringExpense(re) } }
+    fun updateRecurringExpense(re: RecurringExpense) { viewModelScope.launch { repository.updateRecurringExpense(re) } }
+    fun deleteRecurringExpense(re: RecurringExpense) { viewModelScope.launch { repository.deleteRecurringExpense(re) } }
+    fun startShift(o: Double) { viewModelScope.launch { repository.startShift(o) } }
+    fun endShift(o: Double) {
+        val s = uiState.value.activeShift ?: return
+        val d = o - s.startOdometer
+        val c = if (d > 0) d * costPerKm.value else 0.0
+        viewModelScope.launch { repository.endShift(s, o, c) }
     }
-
-    fun setReportDate(dateInMillis: Long) {
-        _reportSelectedDate.value = dateInMillis
-    }
-
-    fun addExpense(expense: Expense) {
-        viewModelScope.launch {
-            repository.addExpense(expense)
-        }
-    }
-
-    fun deleteExpense(expense: Expense) {
-        viewModelScope.launch {
-            repository.deleteExpense(expense)
-        }
-    }
-
-    fun addRecurringExpense(recurringExpense: RecurringExpense) {
-        viewModelScope.launch {
-            repository.addRecurringExpense(recurringExpense)
-        }
-    }
-
-    fun updateRecurringExpense(recurringExpense: RecurringExpense) {
-        viewModelScope.launch {
-            repository.updateRecurringExpense(recurringExpense)
-        }
-    }
-
-    fun deleteRecurringExpense(recurringExpense: RecurringExpense) {
-        viewModelScope.launch {
-            repository.deleteRecurringExpense(recurringExpense)
-        }
-    }
-
-    fun applyRecurringExpense(recurringExpense: RecurringExpense, dateInMillis: Long) {
-        val expense = Expense(
-            timestamp = dateInMillis,
-            description = recurringExpense.description,
-            amount = recurringExpense.amount,
-            vatAmount = recurringExpense.vatAmount,
-            affectsCostPerKm = recurringExpense.affectsCostPerKm
-        )
-        addExpense(expense)
-    }
-
-
-    fun startShift(startOdometer: Double) {
-        viewModelScope.launch {
-            repository.startShift(startOdometer)
-        }
-    }
-
-    fun endShift(endOdometer: Double) {
-        val shift = uiState.value.activeShift ?: return
-        val currentCostPerKm = costPerKm.value
-        val distance = endOdometer - shift.startOdometer
-        val vehicleCost = if (distance > 0) distance * currentCostPerKm else 0.0
-        
-        viewModelScope.launch {
-            repository.endShift(shift, endOdometer, vehicleCost)
-        }
-    }
-
-    fun addJob(
-        revenue: Double, 
-        receiptAmount: Double?, 
-        notes: String?, 
-        currentOdometer: Double?,
-        paymentType: PaymentType = PaymentType.CASH,
-        isPaid: Boolean = true
-    ) {
-        val shift = uiState.value.activeShift ?: return
-        addJobToShift(shift.id, revenue, receiptAmount, notes, currentOdometer, paymentType, isPaid)
-    }
-
-    fun addJobToShift(
-        shiftId: Long, 
-        revenue: Double, 
-        receiptAmount: Double?, 
-        notes: String?, 
-        currentOdometer: Double?,
-        paymentType: PaymentType = PaymentType.CASH,
-        isPaid: Boolean = true
-    ) {
-        viewModelScope.launch {
-            repository.addJob(shiftId, revenue, receiptAmount, notes, currentOdometer, paymentType, isPaid)
-        }
-    }
-
-    fun updateJob(
-        job: Job, 
-        revenue: Double, 
-        receiptAmount: Double?, 
-        notes: String?, 
-        currentOdometer: Double?,
-        paymentType: PaymentType? = null,
-        isPaid: Boolean? = null
-    ) {
-        viewModelScope.launch {
-            repository.updateJob(
-                job.copy(
-                    revenue = revenue,
-                    receiptAmount = receiptAmount,
-                    notes = notes,
-                    currentOdometer = currentOdometer,
-                    paymentType = paymentType ?: job.paymentType,
-                    isPaid = isPaid ?: job.isPaid
-                )
-            )
-        }
-    }
-
-    fun markJobAsPaid(job: Job) {
-        viewModelScope.launch {
-            repository.updateJob(job.copy(isPaid = true))
-        }
-    }
-
-    fun updateShift(shift: Shift) {
-        viewModelScope.launch {
-            repository.updateShift(shift)
-        }
-    }
-
-    fun updateShiftDetails(shift: Shift) {
-        viewModelScope.launch {
-            repository.updateShift(shift)
-        }
-    }
-
-    fun getShift(shiftId: Long): Flow<Shift?> = repository.getShiftById(shiftId)
-    fun getJobs(shiftId: Long): Flow<List<Job>> = repository.getJobsForShift(shiftId)
-
+    fun addJobToShift(sid: Long, rev: Double, rec: Double?, n: String?, odo: Double?, pt: PaymentType, ip: Boolean) { viewModelScope.launch { repository.addJob(sid, rev, rec, n, odo, pt, ip) } }
+    fun addJob(rev: Double, rec: Double?, n: String?, odo: Double?, pt: PaymentType, ip: Boolean) { val s = uiState.value.activeShift ?: return; addJobToShift(s.id, rev, rec, n, odo, pt, ip) }
+    fun updateJob(j: Job, rev: Double, rec: Double?, n: String?, odo: Double?, pt: PaymentType?, ip: Boolean?) { viewModelScope.launch { repository.updateJob(j.copy(revenue = rev, receiptAmount = rec, notes = n, currentOdometer = odo, paymentType = pt ?: j.paymentType, isPaid = ip ?: j.isPaid)) } }
+    fun markJobAsPaid(j: Job) { viewModelScope.launch { repository.updateJob(j.copy(isPaid = true)) } }
+    fun updateShiftDetails(s: Shift) { viewModelScope.launch { repository.updateShift(s) } }
+    fun getShift(id: Long): Flow<Shift?> = repository.getShiftById(id)
+    fun getJobs(id: Long): Flow<List<Job>> = repository.getJobsForShift(id)
     fun getReportData(): Flow<Pair<List<ShiftSummary>, List<Expense>>> {
-        val state = reportsUiState.value
-        val (start, end) = calculateDateRange(state.reportPeriod, state.selectedDate)
-        
-        return combine(
-            repository.getShiftSummariesInRange(start, end),
-            repository.getExpensesInRange(start, end)
-        ) { shifts, expenses ->
-            Pair(shifts, expenses)
-        }
+        val (s, e) = calculateDateRange(_reportPeriod.value, _reportSelectedDate.value)
+        return repository.getShiftSummariesInRange(s, e).combine(repository.getExpensesInRange(s, e)) { sh, ex -> sh to ex }
     }
-
-    fun updateCurrency(symbol: String) {
-        viewModelScope.launch {
-            userPreferencesRepository.setCurrencySymbol(symbol)
-        }
-    }
-
-    fun updateVehicleSettings(km: Double, expenses: Double) {
-        viewModelScope.launch {
-            userPreferencesRepository.setInitialHistoricalKm(km)
-            userPreferencesRepository.setInitialHistoricalExpenses(expenses)
-        }
-    }
-
-    suspend fun checkpoint() {
-        repository.checkpoint()
-    }
+    fun updateCurrency(s: String) { viewModelScope.launch { userPreferencesRepository.setCurrencySymbol(s) } }
+    fun updateVehicleSettings(km: Double, exp: Double) { viewModelScope.launch { userPreferencesRepository.setInitialHistoricalKm(km) ; userPreferencesRepository.setInitialHistoricalExpenses(exp) } }
+    suspend fun checkpoint() { repository.checkpoint() }
 }
 
-class MainViewModelFactory(
-    private val repository: TaxiRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
-) : ViewModelProvider.Factory {
+class MainViewModelFactory(private val r: TaxiRepository, private val upr: UserPreferencesRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return MainViewModel(repository, userPreferencesRepository) as T
-        }
+        if (modelClass.isAssignableFrom(MainViewModel::class.java)) { @Suppress("UNCHECKED_CAST") return MainViewModel(r, upr) as T }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

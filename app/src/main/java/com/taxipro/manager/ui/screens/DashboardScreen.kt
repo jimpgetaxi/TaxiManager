@@ -31,6 +31,8 @@ import java.util.*
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.ShoppingCart
 
+import androidx.compose.material.icons.filled.Timeline
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -39,7 +41,8 @@ fun DashboardScreen(
     onSettingsClick: () -> Unit,
     onExpensesClick: () -> Unit,
     onReportsClick: () -> Unit,
-    onReceivablesClick: () -> Unit
+    onReceivablesClick: () -> Unit,
+    onForecastClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showStartShiftDialog by remember { mutableStateOf(false) }
@@ -52,6 +55,9 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
+                    IconButton(onClick = onForecastClick) {
+                        Icon(Icons.Default.Timeline, contentDescription = "Forecast")
+                    }
                     IconButton(onClick = onReceivablesClick) {
                         Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = "Receivables")
                     }
@@ -258,11 +264,19 @@ fun ActiveShiftDashboard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Vehicle Cost
+                // Vehicle Cost & Credit Card Debt
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    Column {
+                        Text("Υπόλοιπο Πιστωτικής", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = "${uiState.currencySymbol}${"%.2f".format(uiState.creditCardDebt)}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(stringResource(R.string.vehicle_cost_label), style = MaterialTheme.typography.bodySmall)
                         Text(

@@ -17,4 +17,18 @@ class Converters {
             PaymentType.CASH // Fallback
         }
     }
+
+    @TypeConverter
+    fun fromPaymentMethod(value: com.taxipro.manager.data.local.entity.PaymentMethod): String {
+        return value.name
+    }
+
+    @TypeConverter
+    fun toPaymentMethod(value: String): com.taxipro.manager.data.local.entity.PaymentMethod {
+        return try {
+            com.taxipro.manager.data.local.entity.PaymentMethod.valueOf(value)
+        } catch (e: IllegalArgumentException) {
+            com.taxipro.manager.data.local.entity.PaymentMethod.CASH
+        }
+    }
 }
