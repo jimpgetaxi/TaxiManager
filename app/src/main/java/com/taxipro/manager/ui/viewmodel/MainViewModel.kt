@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 import com.taxipro.manager.data.local.entity.Expense
-
+import com.taxipro.manager.data.local.entity.RecurringExpense
 import com.taxipro.manager.data.local.entity.ShiftSummary
 
 import java.util.Calendar
@@ -62,6 +62,7 @@ class MainViewModel(
     val initialHistoricalExpenses = userPreferencesRepository.initialHistoricalExpenses
     
     val allExpenses = repository.allExpenses.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val allRecurringExpenses = repository.allRecurringExpenses.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val costPerKm: StateFlow<Double> = combine(
         initialHistoricalKm,
@@ -214,6 +215,35 @@ class MainViewModel(
         viewModelScope.launch {
             repository.deleteExpense(expense)
         }
+    }
+
+    fun addRecurringExpense(recurringExpense: RecurringExpense) {
+        viewModelScope.launch {
+            repository.addRecurringExpense(recurringExpense)
+        }
+    }
+
+    fun updateRecurringExpense(recurringExpense: RecurringExpense) {
+        viewModelScope.launch {
+            repository.updateRecurringExpense(recurringExpense)
+        }
+    }
+
+    fun deleteRecurringExpense(recurringExpense: RecurringExpense) {
+        viewModelScope.launch {
+            repository.deleteRecurringExpense(recurringExpense)
+        }
+    }
+
+    fun applyRecurringExpense(recurringExpense: RecurringExpense, dateInMillis: Long) {
+        val expense = Expense(
+            timestamp = dateInMillis,
+            description = recurringExpense.description,
+            amount = recurringExpense.amount,
+            vatAmount = recurringExpense.vatAmount,
+            affectsCostPerKm = recurringExpense.affectsCostPerKm
+        )
+        addExpense(expense)
     }
 
 

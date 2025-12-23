@@ -12,14 +12,19 @@ import kotlinx.coroutines.flow.map
 
 import com.taxipro.manager.data.local.entity.ShiftSummary
 
+import com.taxipro.manager.data.local.dao.RecurringExpenseDao
+import com.taxipro.manager.data.local.entity.RecurringExpense
+
 class TaxiRepository(
     private val database: TaxiDatabase,
     private val taxiDao: TaxiDao,
-    private val expenseDao: ExpenseDao
+    private val expenseDao: ExpenseDao,
+    private val recurringExpenseDao: RecurringExpenseDao
 ) {
     val activeShift: Flow<Shift?> = taxiDao.getActiveShift()
     val shiftHistory: Flow<List<ShiftSummary>> = taxiDao.getShiftSummaries()
     val allExpenses: Flow<List<Expense>> = expenseDao.getAllExpenses()
+    val allRecurringExpenses: Flow<List<RecurringExpense>> = recurringExpenseDao.getAllRecurringExpenses()
 
     fun getShiftById(shiftId: Long): Flow<Shift?> = taxiDao.getShiftById(shiftId)
 
@@ -69,6 +74,19 @@ class TaxiRepository(
 
     suspend fun deleteExpense(expense: Expense) {
         expenseDao.deleteExpense(expense)
+    }
+
+    // Recurring Expense Operations
+    suspend fun addRecurringExpense(recurringExpense: RecurringExpense) {
+        recurringExpenseDao.insertRecurringExpense(recurringExpense)
+    }
+
+    suspend fun updateRecurringExpense(recurringExpense: RecurringExpense) {
+        recurringExpenseDao.updateRecurringExpense(recurringExpense)
+    }
+
+    suspend fun deleteRecurringExpense(recurringExpense: RecurringExpense) {
+        recurringExpenseDao.deleteRecurringExpense(recurringExpense)
     }
 
     fun getTotalExpensesForCostPerKm(): Flow<Double> = expenseDao.getTotalExpensesForCostPerKm().map { it ?: 0.0 }

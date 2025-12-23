@@ -19,6 +19,7 @@ import com.taxipro.manager.data.repository.UserPreferencesRepository
 import com.taxipro.manager.ui.screens.DashboardScreen
 import com.taxipro.manager.ui.screens.ExpensesScreen
 import com.taxipro.manager.ui.screens.HistoryScreen
+import com.taxipro.manager.ui.screens.RecurringExpensesScreen
 import com.taxipro.manager.ui.screens.ReportsScreen
 import com.taxipro.manager.ui.screens.SettingsScreen
 import com.taxipro.manager.ui.screens.ShiftDetailsScreen
@@ -32,7 +33,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         val database = TaxiDatabase.getDatabase(this)
-        val repository = TaxiRepository(database, database.taxiDao(), database.expenseDao())
+        val repository = TaxiRepository(database, database.taxiDao(), database.expenseDao(), database.recurringExpenseDao())
         val userPreferencesRepository = UserPreferencesRepository(this)
         val viewModelFactory = MainViewModelFactory(repository, userPreferencesRepository)
         val viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
@@ -75,7 +76,12 @@ class MainActivity : ComponentActivity() {
                         }
                         "settings" -> SettingsScreen(
                             viewModel = viewModel,
-                            onBackClick = { currentScreen = "dashboard" }
+                            onBackClick = { currentScreen = "dashboard" },
+                            onRecurringExpensesClick = { currentScreen = "recurring_expenses" }
+                        )
+                        "recurring_expenses" -> RecurringExpensesScreen(
+                            viewModel = viewModel,
+                            onBackClick = { currentScreen = "settings" }
                         )
                         "expenses" -> ExpensesScreen(
                             viewModel = viewModel,

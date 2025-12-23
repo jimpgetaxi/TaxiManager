@@ -5,15 +5,18 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.taxipro.manager.data.local.dao.ExpenseDao
+import com.taxipro.manager.data.local.dao.RecurringExpenseDao
 import com.taxipro.manager.data.local.dao.TaxiDao
 import com.taxipro.manager.data.local.entity.Expense
 import com.taxipro.manager.data.local.entity.Job
+import com.taxipro.manager.data.local.entity.RecurringExpense
 import com.taxipro.manager.data.local.entity.Shift
 
-@Database(entities = [Shift::class, Job::class, Expense::class], version = 5, exportSchema = false)
+@Database(entities = [Shift::class, Job::class, Expense::class, RecurringExpense::class], version = 6, exportSchema = false)
 abstract class TaxiDatabase : RoomDatabase() {
     abstract fun taxiDao(): TaxiDao
     abstract fun expenseDao(): ExpenseDao
+    abstract fun recurringExpenseDao(): RecurringExpenseDao
 
     companion object {
         @Volatile

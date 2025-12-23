@@ -37,7 +37,9 @@ fun ExpensesScreen(
 ) {
     val expenses by viewModel.allExpenses.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val recurringExpenses by viewModel.allRecurringExpenses.collectAsState()
     var showAddExpenseDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
 
     Scaffold(
@@ -47,6 +49,13 @@ fun ExpensesScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_desc))
+                    }
+                },
+                actions = {
+                    if (recurringExpenses.isNotEmpty()) {
+                        TextButton(onClick = { showImportDialog = true }) {
+                            Text("Εισαγωγή Παγίων")
+                        }
                     }
                 }
             )
@@ -133,6 +142,92 @@ fun ExpensesScreen(
             }
         )
     }
+
+    if (showImportDialog) {
+        ImportRecurringExpenseDialog(
+            recurringExpenses = recurringExpenses,
+            currencySymbol = uiState.currencySymbol,
+            onDismiss = { showImportDialog = false },
+            onConfirm = { selectedExpenses ->
+                val now = System.currentTimeMillis()
+                selectedExpenses.forEach { recurring ->
+                    viewModel.applyRecurringExpense(recurring, now)
+                }
+                showImportDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun ImportRecurringExpenseDialog(
+    recurringExpenses: List<com.taxipro.manager.data.local.entity.RecurringExpense>,
+    currencySymbol: String,
+    onDismiss: () -> Unit,
+    onConfirm: (List<com.taxipro.manager.data.local.entity.RecurringExpense>) -> Unit
+) {
+    val selectedExpenses = remember { mutableStateMapOf<Long, Boolean>() }
+    // Select all by default
+    LaunchedEffect(Unit) {
+        recurringExpenses.forEach { selectedExpenses[it.id] = true }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Εισαγωγή Παγίων Εξόδων") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth()
+            ) {
+                Text("Επίλεξε ποια έξοδα θα καταχωρηθούν για τον τρέχοντα μήνα:")
+                Spacer(modifier = Modifier.height(8.dp))
+                recurringExpenses.forEach { expense ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val current = selectedExpenses[expense.id] ?: false
+                                selectedExpenses[expense.id] = !current
+                            }
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Checkbox(
+                            checked = selectedExpenses[expense.id] ?: false,
+                            onCheckedChange = { 
+                                selectedExpenses[expense.id] = it
+                            }
+                        )
+                        Column(modifier = Modifier.padding(start = 8.dp)) {
+                            Text(expense.description, style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "$currencySymbol${"%.2f".format(expense.amount)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val toImport = recurringExpenses.filter { selectedExpenses[it.id] == true }
+                    onConfirm(toImport)
+                }
+            ) {
+                Text("Εισαγωγή")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Ακύρωση")
+            }
+        }
+    )
 }
 
 @Composable

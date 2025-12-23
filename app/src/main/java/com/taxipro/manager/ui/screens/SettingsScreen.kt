@@ -31,7 +31,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     viewModel: MainViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onRecurringExpensesClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val initialKm by viewModel.initialHistoricalKm.collectAsState(initial = 0.0)
@@ -133,6 +134,17 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Fixed Expenses Navigation
+                    Button(
+                        onClick = onRecurringExpensesClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        Text("Διαχείριση Παγίων Εξόδων")
+                    }
+                    
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Result Display
