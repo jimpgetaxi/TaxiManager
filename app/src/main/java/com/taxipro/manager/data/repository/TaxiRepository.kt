@@ -6,6 +6,7 @@ import com.taxipro.manager.data.local.dao.ExpenseDao
 import com.taxipro.manager.data.local.dao.TaxiDao
 import com.taxipro.manager.data.local.entity.Expense
 import com.taxipro.manager.data.local.entity.Job
+import com.taxipro.manager.data.local.entity.PaymentType
 import com.taxipro.manager.data.local.entity.Shift
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -52,13 +53,23 @@ class TaxiRepository(
     }
 
     // Job Operations
-    suspend fun addJob(shiftId: Long, revenue: Double, receiptAmount: Double?, notes: String?, currentOdometer: Double?) {
+    suspend fun addJob(
+        shiftId: Long, 
+        revenue: Double, 
+        receiptAmount: Double?, 
+        notes: String?, 
+        currentOdometer: Double?,
+        paymentType: PaymentType = PaymentType.CASH,
+        isPaid: Boolean = true
+    ) {
         val job = Job(
             shiftId = shiftId,
             revenue = revenue,
             receiptAmount = receiptAmount,
             notes = notes,
-            currentOdometer = currentOdometer
+            currentOdometer = currentOdometer,
+            paymentType = paymentType,
+            isPaid = isPaid
         )
         taxiDao.insertJob(job)
     }
@@ -66,6 +77,8 @@ class TaxiRepository(
     suspend fun updateJob(job: Job) {
         taxiDao.updateJob(job)
     }
+
+    fun getUnpaidJobs(): Flow<List<Job>> = taxiDao.getUnpaidJobs()
 
     // Expense Operations
     suspend fun addExpense(expense: Expense) {

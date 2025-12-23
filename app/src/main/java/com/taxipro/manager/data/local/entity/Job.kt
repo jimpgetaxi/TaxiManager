@@ -5,6 +5,10 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+enum class PaymentType {
+    CASH, POS, CONTRACT
+}
+
 @Entity(
     tableName = "jobs",
     foreignKeys = [
@@ -24,5 +28,7 @@ data class Job(
     val receiptAmount: Double? = null,
     val notes: String? = null,
     val currentOdometer: Double? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val paymentType: PaymentType = PaymentType.CASH,
+    val isPaid: Boolean = true // Defaults to true for backward compatibility (assumed Cash)
 )

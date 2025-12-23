@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 import com.taxipro.manager.data.local.entity.Expense
+import com.taxipro.manager.data.local.entity.PaymentType
 import com.taxipro.manager.data.local.entity.RecurringExpense
 import com.taxipro.manager.data.local.entity.ShiftSummary
 
@@ -63,6 +64,7 @@ class MainViewModel(
     
     val allExpenses = repository.allExpenses.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val allRecurringExpenses = repository.allRecurringExpenses.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val unpaidJobs = repository.getUnpaidJobs().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val costPerKm: StateFlow<Double> = combine(
         initialHistoricalKm,
@@ -264,27 +266,58 @@ class MainViewModel(
         }
     }
 
-    fun addJob(revenue: Double, receiptAmount: Double?, notes: String?, currentOdometer: Double?) {
+    fun addJob(
+        revenue: Double, 
+        receiptAmount: Double?, 
+        notes: String?, 
+        currentOdometer: Double?,
+        paymentType: PaymentType = PaymentType.CASH,
+        isPaid: Boolean = true
+    ) {
         val shift = uiState.value.activeShift ?: return
-        addJobToShift(shift.id, revenue, receiptAmount, notes, currentOdometer)
+        addJobToShift(shift.id, revenue, receiptAmount, notes, currentOdometer, paymentType, isPaid)
     }
 
-    fun addJobToShift(shiftId: Long, revenue: Double, receiptAmount: Double?, notes: String?, currentOdometer: Double?) {
+    fun addJobToShift(
+        shiftId: Long, 
+        revenue: Double, 
+        receiptAmount: Double?, 
+        notes: String?, 
+        currentOdometer: Double?,
+        paymentType: PaymentType = PaymentType.CASH,
+        isPaid: Boolean = true
+    ) {
         viewModelScope.launch {
-            repository.addJob(shiftId, revenue, receiptAmount, notes, currentOdometer)
+            repository.addJob(shiftId, revenue, receiptAmount, notes, currentOdometer, paymentType, isPaid)
         }
     }
 
-    fun updateJob(job: Job, revenue: Double, receiptAmount: Double?, notes: String?, currentOdometer: Double?) {
+    fun updateJob(
+        job: Job, 
+        revenue: Double, 
+        receiptAmount: Double?, 
+        notes: String?, 
+        currentOdometer: Double?,
+        paymentType: PaymentType? = null,
+        isPaid: Boolean? = null
+    ) {
         viewModelScope.launch {
             repository.updateJob(
                 job.copy(
                     revenue = revenue,
                     receiptAmount = receiptAmount,
                     notes = notes,
-                    currentOdometer = currentOdometer
+                    currentOdometer = currentOdometer,
+                    paymentType = paymentType ?: job.paymentType,
+                    isPaid = isPaid ?: job.isPaid
                 )
             )
+        }
+    }
+
+    fun markJobAsPaid(job: Job) {
+        viewModelScope.launch {
+            repository.updateJob(job.copy(isPaid = true))
         }
     }
 

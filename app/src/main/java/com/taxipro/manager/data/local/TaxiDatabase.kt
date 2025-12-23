@@ -12,7 +12,10 @@ import com.taxipro.manager.data.local.entity.Job
 import com.taxipro.manager.data.local.entity.RecurringExpense
 import com.taxipro.manager.data.local.entity.Shift
 
-@Database(entities = [Shift::class, Job::class, Expense::class, RecurringExpense::class], version = 6, exportSchema = false)
+import androidx.room.TypeConverters
+
+@Database(entities = [Shift::class, Job::class, Expense::class, RecurringExpense::class], version = 7, exportSchema = false)
+@TypeConverters(Converters::class)
 abstract class TaxiDatabase : RoomDatabase() {
     abstract fun taxiDao(): TaxiDao
     abstract fun expenseDao(): ExpenseDao

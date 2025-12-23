@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.taxipro.manager.R
 import com.taxipro.manager.data.local.entity.Job
+import com.taxipro.manager.data.local.entity.PaymentType
 import com.taxipro.manager.data.local.entity.Shift
 import com.taxipro.manager.ui.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
@@ -151,19 +152,8 @@ fun ShiftDetailsScreen(
         AddJobDialog(
             currencySymbol = uiState.currencySymbol,
             onDismiss = { showAddJobDialog = false },
-            onConfirm = { rev, rec, note, odo ->
-                viewModel.addJob(rev, rec, note, odo) // Note: addJob currently uses activeShift from UI State. 
-                // We need a variant of addJob that takes shiftId!
-                // The current addJob in ViewModel:
-                /*
-                fun addJob(...) {
-                    val shift = uiState.value.activeShift ?: return
-                    viewModelScope.launch { repository.addJob(shift.id, ...) }
-                }
-                */
-                // This is a problem. It will add to the ACTIVE shift, not THIS shift.
-                // I need to expose a `addJobToShift(shiftId, ...)` in ViewModel.
-                viewModel.addJobToShift(currentShift.id, rev, rec, note, odo)
+            onConfirm = { rev, rec, note, odo, paymentType, isPaid ->
+                viewModel.addJobToShift(currentShift.id, rev, rec, note, odo, paymentType, isPaid)
                 showAddJobDialog = false
             }
         )
@@ -174,8 +164,8 @@ fun ShiftDetailsScreen(
             job = selectedJobForEdit!!,
             currencySymbol = uiState.currencySymbol,
             onDismiss = { selectedJobForEdit = null },
-            onConfirm = { rev, rec, note, odo ->
-                viewModel.updateJob(selectedJobForEdit!!, rev, rec, note, odo)
+            onConfirm = { rev, rec, note, odo, paymentType, isPaid ->
+                viewModel.updateJob(selectedJobForEdit!!, rev, rec, note, odo, paymentType, isPaid)
                 selectedJobForEdit = null
             }
         )

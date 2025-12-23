@@ -70,4 +70,7 @@ interface TaxiDao {
     
     @Query("SELECT SUM(receiptAmount) FROM jobs WHERE shiftId = :shiftId")
     fun getTotalReceiptsForShift(shiftId: Long): Flow<Double?>
+
+    @Query("SELECT * FROM jobs WHERE isPaid = 0 ORDER BY timestamp DESC")
+    fun getUnpaidJobs(): Flow<List<Job>>
 }

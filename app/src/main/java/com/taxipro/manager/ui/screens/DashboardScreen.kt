@@ -3,7 +3,9 @@ package com.taxipro.manager.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
@@ -21,10 +23,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.taxipro.manager.R
 import com.taxipro.manager.data.local.entity.Job
+import com.taxipro.manager.data.local.entity.PaymentType
 import com.taxipro.manager.ui.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.ShoppingCart
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,7 +38,8 @@ fun DashboardScreen(
     onHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onExpensesClick: () -> Unit,
-    onReportsClick: () -> Unit
+    onReportsClick: () -> Unit,
+    onReceivablesClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showStartShiftDialog by remember { mutableStateOf(false) }
@@ -47,6 +52,9 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
+                    IconButton(onClick = onReceivablesClick) {
+                        Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = "Receivables")
+                    }
                     IconButton(onClick = onReportsClick) {
                         Icon(Icons.Default.Info, contentDescription = stringResource(R.string.reports_title))
                     }
@@ -134,8 +142,8 @@ fun DashboardScreen(
         AddJobDialog(
             currencySymbol = uiState.currencySymbol,
             onDismiss = { showAddJobDialog = false },
-            onConfirm = { revenue, receiptAmount, notes, odometer ->
-                viewModel.addJob(revenue, receiptAmount, notes, odometer)
+            onConfirm = { revenue, receiptAmount, notes, odometer, paymentType, isPaid ->
+                viewModel.addJob(revenue, receiptAmount, notes, odometer, paymentType, isPaid)
                 showAddJobDialog = false
             }
         )
@@ -146,8 +154,8 @@ fun DashboardScreen(
             job = selectedJobForEdit!!,
             currencySymbol = uiState.currencySymbol,
             onDismiss = { selectedJobForEdit = null },
-            onConfirm = { revenue, receiptAmount, notes, odometer ->
-                viewModel.updateJob(selectedJobForEdit!!, revenue, receiptAmount, notes, odometer)
+            onConfirm = { revenue, receiptAmount, notes, odometer, paymentType, isPaid ->
+                viewModel.updateJob(selectedJobForEdit!!, revenue, receiptAmount, notes, odometer, paymentType, isPaid)
                 selectedJobForEdit = null
             }
         )
@@ -298,9 +306,12 @@ fun ActiveShiftDashboard(
 @Composable
 fun JobItem(job: Job, currencySymbol: String, onClick: () -> Unit) {
     val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val containerColor = if (!job.isPaid) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
-        onClick = onClick
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Row(
             modifier = Modifier
@@ -310,7 +321,20 @@ fun JobItem(job: Job, currencySymbol: String, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.time_label, dateFormat.format(Date(job.timestamp))), style = MaterialTheme.typography.bodySmall)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.time_label, dateFormat.format(Date(job.timestamp))), style = MaterialTheme.typography.bodySmall)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = when(job.paymentType) {
+                            PaymentType.CASH -> "Cash"
+                            PaymentType.POS -> "POS"
+                            PaymentType.CONTRACT -> "Contract"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
                 if (!job.notes.isNullOrEmpty()) {
                     Text(job.notes, style = MaterialTheme.typography.bodyMedium)
                 }
@@ -327,47 +351,82 @@ fun EditJobDialog(
     job: Job,
     currencySymbol: String,
     onDismiss: () -> Unit,
-    onConfirm: (Double, Double?, String?, Double?) -> Unit
+    onConfirm: (Double, Double?, String?, Double?, PaymentType, Boolean) -> Unit
 ) {
     var revenue by remember { mutableStateOf(job.revenue.toString()) }
     var receiptAmount by remember { mutableStateOf(job.receiptAmount?.toString() ?: "") }
     var notes by remember { mutableStateOf(job.notes ?: "") }
     var odometer by remember { mutableStateOf(job.currentOdometer?.toString() ?: "") }
+    var paymentType by remember { mutableStateOf(job.paymentType) }
+    var isPaid by remember { mutableStateOf(job.isPaid) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.edit_job_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                 Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    PaymentTypeChip(
+                        type = PaymentType.CASH, 
+                        selected = paymentType == PaymentType.CASH, 
+                        onClick = { paymentType = PaymentType.CASH }
+                    )
+                    PaymentTypeChip(
+                        type = PaymentType.POS, 
+                        selected = paymentType == PaymentType.POS, 
+                        onClick = { paymentType = PaymentType.POS }
+                    )
+                    PaymentTypeChip(
+                        type = PaymentType.CONTRACT, 
+                        selected = paymentType == PaymentType.CONTRACT, 
+                        onClick = { paymentType = PaymentType.CONTRACT }
+                    )
+                }
+
                 OutlinedTextField(
                     value = revenue,
                     onValueChange = { revenue = it },
                     label = { Text(stringResource(R.string.revenue_label, currencySymbol)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = receiptAmount,
                     onValueChange = { receiptAmount = it },
                     label = { Text(stringResource(R.string.receipt_amount_label)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text(stringResource(R.string.notes_label)) }
+                    label = { Text(stringResource(R.string.notes_label)) },
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = odometer,
                     onValueChange = { odometer = it },
                     label = { Text(stringResource(R.string.current_odometer_label)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
                 )
+                
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Paid")
+                    Switch(checked = isPaid, onCheckedChange = { isPaid = it })
+                }
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 revenue.toDoubleOrNull()?.let { rev ->
-                    onConfirm(rev, receiptAmount.toDoubleOrNull(), notes.takeIf { it.isNotBlank() }, odometer.toDoubleOrNull())
+                    onConfirm(rev, receiptAmount.toDoubleOrNull(), notes.takeIf { it.isNotBlank() }, odometer.toDoubleOrNull(), paymentType, isPaid)
                 }
             }) {
                 Text(stringResource(R.string.update_action))
@@ -441,46 +500,92 @@ fun EndShiftDialog(onDismiss: () -> Unit, onConfirm: (Double) -> Unit) {
 }
 
 @Composable
-fun AddJobDialog(currencySymbol: String, onDismiss: () -> Unit, onConfirm: (Double, Double?, String?, Double?) -> Unit) {
+fun AddJobDialog(
+    currencySymbol: String, 
+    onDismiss: () -> Unit, 
+    onConfirm: (Double, Double?, String?, Double?, PaymentType, Boolean) -> Unit
+) {
     var revenue by remember { mutableStateOf("") }
     var receiptAmount by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     var odometer by remember { mutableStateOf("") }
+    var paymentType by remember { mutableStateOf(PaymentType.CASH) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.add_job_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                // Payment Type Selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    PaymentTypeChip(
+                        type = PaymentType.CASH, 
+                        selected = paymentType == PaymentType.CASH, 
+                        onClick = { paymentType = PaymentType.CASH }
+                    )
+                    PaymentTypeChip(
+                        type = PaymentType.POS, 
+                        selected = paymentType == PaymentType.POS, 
+                        onClick = { paymentType = PaymentType.POS }
+                    )
+                    PaymentTypeChip(
+                        type = PaymentType.CONTRACT, 
+                        selected = paymentType == PaymentType.CONTRACT, 
+                        onClick = { paymentType = PaymentType.CONTRACT }
+                    )
+                }
+
                 OutlinedTextField(
                     value = revenue,
                     onValueChange = { revenue = it },
                     label = { Text(stringResource(R.string.revenue_label, currencySymbol)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
-                    value = receiptAmount,
-                    onValueChange = { receiptAmount = it },
-                    label = { Text(stringResource(R.string.receipt_amount_label)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                )
+                
+                if (paymentType != PaymentType.CONTRACT) {
+                    OutlinedTextField(
+                        value = receiptAmount,
+                        onValueChange = { receiptAmount = it },
+                        label = { Text(stringResource(R.string.receipt_amount_label)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    Text(
+                        text = "Contract jobs usually don't have immediate receipts (Z). Receipt amount will be 0.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text(stringResource(R.string.notes_label)) }
+                    label = { Text(stringResource(R.string.notes_label)) },
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = odometer,
                     onValueChange = { odometer = it },
                     label = { Text(stringResource(R.string.current_odometer_label)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 revenue.toDoubleOrNull()?.let { rev ->
-                    onConfirm(rev, receiptAmount.toDoubleOrNull(), notes.takeIf { it.isNotBlank() }, odometer.toDoubleOrNull())
+                    val receipt = if (paymentType == PaymentType.CONTRACT) 0.0 else receiptAmount.toDoubleOrNull()
+                    val isPaid = paymentType != PaymentType.CONTRACT
+                    onConfirm(rev, receipt, notes.takeIf { it.isNotBlank() }, odometer.toDoubleOrNull(), paymentType, isPaid)
                 }
             }) {
                 Text(stringResource(R.string.add_action))
@@ -490,6 +595,27 @@ fun AddJobDialog(currencySymbol: String, onDismiss: () -> Unit, onConfirm: (Doub
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel_action))
             }
+        }
+    )
+}
+
+@Composable
+fun PaymentTypeChip(
+    type: PaymentType,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { 
+            Text(
+                when(type) {
+                    PaymentType.CASH -> "Cash"
+                    PaymentType.POS -> "POS"
+                    PaymentType.CONTRACT -> "Contract"
+                }
+            ) 
         }
     )
 }
